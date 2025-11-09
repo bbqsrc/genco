@@ -847,3 +847,110 @@ fn test_complex_generics() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_index_signature_string() -> genco::fmt::Result {
+    let map = ts::interface("StringMap")
+        .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")));
+
+    let toks: ts::Tokens = quote! {
+        $map
+    };
+
+    assert_eq!(
+        vec![
+            "interface StringMap {",
+            "    [key: string]: any;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_index_signature_number() -> genco::fmt::Result {
+    let array = ts::interface("NumberArray")
+        .with_index_signature(ts::index_signature_number("index", ts::type_ref("string")));
+
+    let toks: ts::Tokens = quote! {
+        $array
+    };
+
+    assert_eq!(
+        vec![
+            "interface NumberArray {",
+            "    [index: number]: string;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_index_signature_symbol() -> genco::fmt::Result {
+    let symbol_map = ts::interface("SymbolMap")
+        .with_index_signature(ts::index_signature_symbol("sym", ts::type_ref("number")));
+
+    let toks: ts::Tokens = quote! {
+        $symbol_map
+    };
+
+    assert_eq!(
+        vec![
+            "interface SymbolMap {",
+            "    [sym: symbol]: number;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_index_signature_with_properties() -> genco::fmt::Result {
+    let map = ts::interface("StringMapWithLength")
+        .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")))
+        .with_property(ts::property("length", ts::type_ref("number")))
+        .with_property(ts::optional_property("name", ts::type_ref("string")));
+
+    let toks: ts::Tokens = quote! {
+        $map
+    };
+
+    assert_eq!(
+        vec![
+            "interface StringMapWithLength {",
+            "    [key: string]: any;",
+            "    length: number;",
+            "    name?: string;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_index_signature_with_generics() -> genco::fmt::Result {
+    let dict = ts::interface("Dictionary")
+        .with_generic_params(vec![ts::generic_param("T")])
+        .with_index_signature(ts::index_signature_string("key", ts::type_ref("T")))
+        .with_property(ts::property("count", ts::type_ref("number")));
+
+    let toks: ts::Tokens = quote! {
+        $dict
+    };
+
+    assert_eq!(
+        vec![
+            "interface Dictionary<T> {",
+            "    [key: string]: T;",
+            "    count: number;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}

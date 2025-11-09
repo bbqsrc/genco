@@ -820,6 +820,143 @@ where
     GenericParam::new(name)
 }
 
+/// A TypeScript index signature type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // [key: string]: any
+/// let string_index = ts::index_signature_string("key", ts::type_ref("any"));
+///
+/// // [index: number]: string
+/// let number_index = ts::index_signature_number("index", ts::type_ref("string"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub enum IndexSignatureKey {
+    /// String index signature: `[key: string]`
+    String(ItemStr),
+    /// Number index signature: `[index: number]`
+    Number(ItemStr),
+    /// Symbol index signature: `[key: symbol]`
+    Symbol(ItemStr),
+}
+
+/// A TypeScript index signature for interfaces.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let map = ts::interface("StringMap")
+///     .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct IndexSignature {
+    key: IndexSignatureKey,
+    value_type: TypeRef,
+}
+
+impl IndexSignature {
+    /// Create a new index signature.
+    pub fn new(key: IndexSignatureKey, value_type: TypeRef) -> Self {
+        Self { key, value_type }
+    }
+}
+
+impl FormatInto<TypeScript> for IndexSignature {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("[");
+        match self.key {
+            IndexSignatureKey::String(name) => {
+                tokens.append(name);
+                tokens.append(":");
+                tokens.space();
+                tokens.append("string");
+            }
+            IndexSignatureKey::Number(name) => {
+                tokens.append(name);
+                tokens.append(":");
+                tokens.space();
+                tokens.append("number");
+            }
+            IndexSignatureKey::Symbol(name) => {
+                tokens.append(name);
+                tokens.append(":");
+                tokens.space();
+                tokens.append("symbol");
+            }
+        }
+        tokens.append("]");
+        tokens.append(":");
+        tokens.space();
+        tokens.append(self.value_type);
+        tokens.append(";");
+    }
+}
+
+/// Create a string index signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let map = ts::interface("StringMap")
+///     .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")));
+///
+/// let toks: ts::Tokens = quote! {
+///     $map
+/// };
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn index_signature_string<N>(key_name: N, value_type: TypeRef) -> IndexSignature
+where
+    N: Into<ItemStr>,
+{
+    IndexSignature::new(IndexSignatureKey::String(key_name.into()), value_type)
+}
+
+/// Create a number index signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let array = ts::interface("NumberArray")
+///     .with_index_signature(ts::index_signature_number("index", ts::type_ref("string")));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn index_signature_number<N>(key_name: N, value_type: TypeRef) -> IndexSignature
+where
+    N: Into<ItemStr>,
+{
+    IndexSignature::new(IndexSignatureKey::Number(key_name.into()), value_type)
+}
+
+/// Create a symbol index signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let symbol_map = ts::interface("SymbolMap")
+///     .with_index_signature(ts::index_signature_symbol("key", ts::type_ref("number")));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn index_signature_symbol<N>(key_name: N, value_type: TypeRef) -> IndexSignature
+where
+    N: Into<ItemStr>,
+{
+    IndexSignature::new(IndexSignatureKey::Symbol(key_name.into()), value_type)
+}
+
 /// A TypeScript interface definition.
 ///
 /// # Examples
@@ -837,9 +974,14 @@ where
 ///     .with_generic_params(vec![ts::generic_param("T")])
 ///     .with_property(ts::property("value", ts::type_ref("T")));
 ///
+/// // Interface with index signature
+/// let map = ts::interface("StringMap")
+///     .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")));
+///
 /// let toks: ts::Tokens = quote! {
 ///     $user_interface
 ///     $container
+///     $map
 /// };
 /// # Ok::<_, genco::fmt::Error>(())
 /// ```
@@ -848,6 +990,7 @@ pub struct Interface {
     name: ItemStr,
     generic_params: Vec<GenericParam>,
     properties: Vec<Property>,
+    index_signature: Option<IndexSignature>,
 }
 
 impl Interface {
@@ -860,6 +1003,7 @@ impl Interface {
             name: name.into(),
             generic_params: Vec::new(),
             properties: Vec::new(),
+            index_signature: None,
         }
     }
 
@@ -883,6 +1027,23 @@ impl Interface {
     /// Add a property to the interface.
     pub fn with_property(mut self, property: Property) -> Self {
         self.properties.push(property);
+        self
+    }
+
+    /// Add an index signature to the interface.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// let map = ts::interface("StringMap")
+    ///     .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")))
+    ///     .with_property(ts::property("count", ts::type_ref("number")));
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_index_signature(mut self, index_signature: IndexSignature) -> Self {
+        self.index_signature = Some(index_signature);
         self
     }
 }
@@ -915,6 +1076,13 @@ impl FormatInto<TypeScript> for Interface {
         tokens.append("{");
         tokens.indent();
 
+        // Add index signature first if present
+        if let Some(index_sig) = self.index_signature {
+            tokens.push();
+            tokens.append(index_sig);
+        }
+
+        // Then add properties
         for prop in self.properties {
             tokens.push();
             tokens.append(prop);
