@@ -83,6 +83,9 @@ The following are languages which have built-in support in genco.
 * [🐍 <b>Python</b>][python]<br>
   <small>[Example][python-example]</small>
 
+* [🍎 <b>Swift</b>][swift]<br>
+  <small>[Example][swift-example]</small>
+
 <small>Is your favorite language missing? <b>[Open an issue!]</b></small>
 
 You can run one of the examples by:
@@ -152,5 +155,7 @@ fn main() {
 [rust-example]: <https://github.com/udoprog/genco/blob/master/examples/rust.rs>
 [rust]: <https://docs.rs/genco/latest/genco/lang/rust/index.html>
 [solve namespace conflicts]: <https://docs.rs/genco/latest/genco/lang/csharp/fn.import.html>
+[swift-example]: <https://github.com/udoprog/genco/blob/master/examples/swift.rs>
+[swift]: <https://docs.rs/genco/latest/genco/lang/swift/index.html>
 [token streams]: <https://docs.rs/genco/latest/genco/tokens/struct.Tokens.html>
 [whitespace detection]: <https://docs.rs/genco/latest/genco/macro.quote.html#whitespace-detection>

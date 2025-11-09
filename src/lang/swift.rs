@@ -77,6 +77,183 @@ impl_lang! {
             out.write_str(&self.name)
         }
     }
+
+    OwnershipModifier(OwnershipModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                OwnershipModifier::Consuming => out.write_str("consuming"),
+                OwnershipModifier::Borrowing => out.write_str("borrowing"),
+                OwnershipModifier::Inout => out.write_str("inout"),
+            }
+        }
+    }
+
+    ProtocolConformance(ProtocolConformance) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            if self.negated {
+                out.write_char('~')?;
+            }
+            out.write_str(&self.protocol)
+        }
+    }
+
+    PropertyWrapper(PropertyWrapper) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_char('@')?;
+            out.write_str(&self.name)?;
+            if let Some(ref args) = self.arguments {
+                out.write_char('(')?;
+                out.write_str(args)?;
+                out.write_char(')')?;
+            }
+            Ok(())
+        }
+    }
+
+    AttachedMacro(AttachedMacro) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@attached(")?;
+            out.write_str(&self.macro_type)?;
+            if !self.names.is_empty() {
+                out.write_str(", names: ")?;
+                out.write_str(&self.names)?;
+            }
+            out.write_char(')')
+        }
+    }
+
+    FreestandingMacro(FreestandingMacro) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@freestanding(")?;
+            out.write_str(&self.macro_type)?;
+            out.write_char(')')
+        }
+    }
+
+    ResultBuilder(ResultBuilder) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@resultBuilder")
+        }
+    }
+
+    MainActor(MainActor) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@MainActor")
+        }
+    }
+
+    AsyncModifier(AsyncModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                AsyncModifier::Async => out.write_str("async"),
+                AsyncModifier::Await => out.write_str("await"),
+                AsyncModifier::Throws => out.write_str("throws"),
+            }
+        }
+    }
+
+    IsolationModifier(IsolationModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                IsolationModifier::Nonisolated => out.write_str("nonisolated"),
+                IsolationModifier::Isolated => out.write_str("isolated"),
+            }
+        }
+    }
+
+    ActorType(ActorType) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("actor")
+        }
+    }
+
+    TypeModifier(TypeModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                TypeModifier::Any => out.write_str("any"),
+                TypeModifier::Some => out.write_str("some"),
+            }
+        }
+    }
+
+    TypedThrows(TypedThrows) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("throws(")?;
+            out.write_str(&self.error_type)?;
+            out.write_char(')')
+        }
+    }
+
+    ObservableDecorator(ObservableDecorator) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@Observable")
+        }
+    }
+
+    GlobalActor(GlobalActor) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_char('@')?;
+            out.write_str(&self.name)
+        }
+    }
+
+    AccessModifier(AccessModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                AccessModifier::Package => out.write_str("package"),
+            }
+        }
+    }
+
+    AvailabilityAttribute(AvailabilityAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@available(")?;
+            out.write_str(&self.spec)?;
+            out.write_char(')')
+        }
+    }
+
+    ClosureModifier(ClosureModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                ClosureModifier::Escaping => out.write_str("@escaping"),
+                ClosureModifier::Autoclosure => out.write_str("@autoclosure"),
+            }
+        }
+    }
+
+    SendableAttribute(SendableAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@Sendable")
+        }
+    }
+
+    MainAttribute(MainAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@main")
+        }
+    }
+
+    ObjCAttribute(ObjCAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@objc")?;
+            if let Some(ref name) = self.name {
+                out.write_char('(')?;
+                out.write_str(name)?;
+                out.write_char(')')?;
+            }
+            Ok(())
+        }
+    }
+
+    IBAttribute(IBAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                IBAttribute::IBOutlet => out.write_str("@IBOutlet"),
+                IBAttribute::IBAction => out.write_str("@IBAction"),
+            }
+        }
+    }
 }
 
 /// Format state for Swift code.
@@ -123,6 +300,246 @@ enum ImportType {
     ImportImplementationOnly,
 }
 
+/// Ownership modifier for function parameters (Swift 6.0+).
+///
+/// Swift 6.0 introduced explicit ownership modifiers to control how values are passed:
+/// - `consuming` - Takes ownership of the value (move semantics)
+/// - `borrowing` - Borrows the value immutably (no ownership transfer)
+/// - `inout` - Borrows the value mutably
+///
+/// Created through helper functions like [consuming()], [borrowing()], or [inout_modifier()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum OwnershipModifier {
+    /// `consuming` - Takes ownership of the value (move semantics)
+    Consuming,
+    /// `borrowing` - Borrows the value immutably
+    Borrowing,
+    /// `inout` - Borrows the value mutably
+    Inout,
+}
+
+/// Protocol conformance with optional negation (Swift 6.0+).
+///
+/// Swift 6.0 introduced negative types with `~Copyable` to create non-copyable types.
+/// This struct represents a protocol conformance that can be negated.
+///
+/// Created through the [protocol_conformance()] or [non_copyable()] functions.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ProtocolConformance {
+    /// Protocol name (e.g., "Copyable", "Sendable")
+    protocol: ItemStr,
+    /// Whether this is a negative constraint (e.g., `~Copyable`)
+    negated: bool,
+}
+
+/// Property wrapper decorator (Swift 5.1+, common in Swift 6.0).
+///
+/// Property wrappers like `@State`, `@Binding`, `@Published` are common in SwiftUI
+/// and modern Swift code.
+///
+/// Created through the [property_wrapper()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct PropertyWrapper {
+    /// Wrapper name (e.g., "State", "Binding", "Published")
+    name: ItemStr,
+    /// Optional arguments (e.g., for @State(initialValue: 0))
+    arguments: Option<ItemStr>,
+}
+
+/// Attached macro decorator (Swift 5.9+).
+///
+/// Attached macros can add members, attributes, accessors, peers, or conformances.
+///
+/// Created through the [attached_macro()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct AttachedMacro {
+    /// Type of attached macro: "member", "memberAttribute", "accessor", "peer", "conformance"
+    macro_type: ItemStr,
+    /// Names specification (e.g., "named(_:)")
+    names: ItemStr,
+}
+
+/// Freestanding macro decorator (Swift 5.9+).
+///
+/// Freestanding macros are expression or declaration macros.
+///
+/// Created through the [freestanding_macro()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct FreestandingMacro {
+    /// Type of freestanding macro: "expression" or "declaration"
+    macro_type: ItemStr,
+}
+
+/// Result builder decorator.
+///
+/// Result builders enable DSL-style syntax (e.g., SwiftUI view builders).
+///
+/// Created through the [result_builder()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ResultBuilder {}
+
+/// MainActor decorator for actor isolation.
+///
+/// Marks types or functions as isolated to the main actor.
+///
+/// Created through the [main_actor()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct MainActor {}
+
+/// Async modifier for concurrency (Swift 5.5+).
+///
+/// Swift introduced structured concurrency with async/await in Swift 5.5.
+///
+/// Created through helper functions like [async_modifier()], [await_keyword()], or [throws_modifier()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum AsyncModifier {
+    /// `async` - Marks a function as asynchronous
+    Async,
+    /// `await` - Used to call async functions
+    Await,
+    /// `throws` - Marks a function that can throw errors
+    Throws,
+}
+
+/// Isolation modifier for actor isolation (Swift 5.5+).
+///
+/// Controls how declarations interact with actor isolation.
+///
+/// Created through helper functions like [nonisolated_modifier()] or [isolated_modifier()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum IsolationModifier {
+    /// `nonisolated` - Opts out of actor isolation
+    Nonisolated,
+    /// `isolated` - Explicitly isolated to an actor
+    Isolated,
+}
+
+/// Actor type keyword (Swift 5.5+).
+///
+/// Declares an actor type for safe concurrent access.
+///
+/// Created through the [actor_type()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ActorType {}
+
+/// Type modifier for existential and opaque types (Swift 5.6+).
+///
+/// Swift 5.6 introduced `any` for existential types and `some` for opaque types.
+///
+/// Created through helper functions like [any_type()] or [some_type()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum TypeModifier {
+    /// `any` - Existential type (type-erased protocol)
+    Any,
+    /// `some` - Opaque type (concrete type with preserved identity)
+    Some,
+}
+
+/// Typed throws for specific error types (Swift 6.0+).
+///
+/// Swift 6.0 allows specifying the error type a function can throw.
+///
+/// Created through the [typed_throws()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct TypedThrows {
+    /// The error type (e.g., "NetworkError")
+    error_type: ItemStr,
+}
+
+/// Observable decorator (Swift 5.9+).
+///
+/// The @Observable macro simplifies observable object creation.
+///
+/// Created through the [observable()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ObservableDecorator {}
+
+/// Custom global actor decorator (Swift 5.5+).
+///
+/// Custom global actors for actor isolation.
+///
+/// Created through the [global_actor()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct GlobalActor {
+    /// The global actor name (e.g., "UIActor", "DatabaseActor")
+    name: ItemStr,
+}
+
+/// Access control modifier (Swift 5.9+).
+///
+/// Swift 5.9 introduced `package` access control.
+///
+/// Created through helper functions like [package_access()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum AccessModifier {
+    /// `package` - Package-level access control
+    Package,
+}
+
+/// Availability attribute (Swift 2.0+).
+///
+/// Platform and version availability annotations.
+///
+/// Created through the [available()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct AvailabilityAttribute {
+    /// The availability specification (e.g., "iOS 15, *")
+    spec: ItemStr,
+}
+
+/// Closure modifier (Swift 3.0+).
+///
+/// Modifiers for closure parameters.
+///
+/// Created through helper functions like [escaping()] or [autoclosure()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum ClosureModifier {
+    /// `@escaping` - Closure outlives the function call
+    Escaping,
+    /// `@autoclosure` - Automatically wraps expression in closure
+    Autoclosure,
+}
+
+/// Sendable attribute (Swift 5.5+).
+///
+/// Marks closures or function types as sendable across concurrency domains.
+///
+/// Created through the [sendable()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct SendableAttribute {}
+
+/// Main attribute (Swift 5.3+).
+///
+/// Marks a type as the application entry point.
+///
+/// Created through the [main_attribute()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct MainAttribute {}
+
+/// ObjC attribute (Objective-C interop).
+///
+/// Exposes declarations to the Objective-C runtime.
+///
+/// Created through the [objc()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ObjCAttribute {
+    /// Optional Objective-C name
+    name: Option<ItemStr>,
+}
+
+/// Interface Builder attribute (iOS/macOS).
+///
+/// Marks properties and methods for Interface Builder.
+///
+/// Created through helper functions like [ib_outlet()] or [ib_action()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum IBAttribute {
+    /// `@IBOutlet` - Interface Builder outlet
+    IBOutlet,
+    /// `@IBAction` - Interface Builder action
+    IBAction,
+}
+
 impl Swift {
     fn imports(out: &mut Tokens, tokens: &Tokens) {
         use crate as genco;
@@ -138,6 +555,28 @@ impl Swift {
                 AnyKind::ImportImplementationOnly(ref i) => {
                     modules.insert((&i.module, ImportType::ImportImplementationOnly));
                 }
+                // Other types are not imports, so we ignore them here
+                AnyKind::OwnershipModifier(_)
+                | AnyKind::ProtocolConformance(_)
+                | AnyKind::PropertyWrapper(_)
+                | AnyKind::AttachedMacro(_)
+                | AnyKind::FreestandingMacro(_)
+                | AnyKind::ResultBuilder(_)
+                | AnyKind::MainActor(_)
+                | AnyKind::AsyncModifier(_)
+                | AnyKind::IsolationModifier(_)
+                | AnyKind::ActorType(_)
+                | AnyKind::TypeModifier(_)
+                | AnyKind::TypedThrows(_)
+                | AnyKind::ObservableDecorator(_)
+                | AnyKind::GlobalActor(_)
+                | AnyKind::AccessModifier(_)
+                | AnyKind::AvailabilityAttribute(_)
+                | AnyKind::ClosureModifier(_)
+                | AnyKind::SendableAttribute(_)
+                | AnyKind::MainAttribute(_)
+                | AnyKind::ObjCAttribute(_)
+                | AnyKind::IBAttribute(_) => {}
             }
         }
 
@@ -215,4 +654,713 @@ pub fn import_implementation_only(
         module: module.into(),
         name: name.into(),
     }
+}
+
+/// Creates a `consuming` ownership modifier for Swift 6.0+ function parameters.
+///
+/// The `consuming` keyword indicates that the parameter takes ownership of the value,
+/// using move semantics.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let consuming = swift::consuming();
+/// let toks = quote!($consuming value: String);
+///
+/// assert_eq!("consuming value: String", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn consuming() -> OwnershipModifier {
+    OwnershipModifier::Consuming
+}
+
+/// Creates a `borrowing` ownership modifier for Swift 6.0+ function parameters.
+///
+/// The `borrowing` keyword indicates that the parameter borrows the value immutably,
+/// without taking ownership.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let borrowing = swift::borrowing();
+/// let toks = quote!($borrowing value: String);
+///
+/// assert_eq!("borrowing value: String", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn borrowing() -> OwnershipModifier {
+    OwnershipModifier::Borrowing
+}
+
+/// Creates an `inout` ownership modifier for Swift function parameters.
+///
+/// The `inout` keyword indicates that the parameter borrows the value mutably,
+/// allowing modifications that are visible to the caller.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let inout_mod = swift::inout_modifier();
+/// let toks = quote!($inout_mod value: String);
+///
+/// assert_eq!("inout value: String", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn inout_modifier() -> OwnershipModifier {
+    OwnershipModifier::Inout
+}
+
+/// Creates a protocol conformance constraint.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let sendable = swift::protocol_conformance("Sendable", false);
+/// let toks = quote!($sendable);
+///
+/// assert_eq!("Sendable", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn protocol_conformance(
+    protocol: impl Into<ItemStr>,
+    negated: bool,
+) -> ProtocolConformance {
+    ProtocolConformance {
+        protocol: protocol.into(),
+        negated,
+    }
+}
+
+/// Creates a `~Copyable` constraint for Swift 6.0+ non-copyable types.
+///
+/// Non-copyable types use move semantics and cannot be implicitly copied,
+/// useful for resource-managing types like file handles.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let non_copy = swift::non_copyable();
+/// let toks = quote! {
+///     struct FileHandle: $non_copy {
+///         let descriptor: Int32
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "struct FileHandle: ~Copyable {",
+///         "    let descriptor: Int32",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn non_copyable() -> ProtocolConformance {
+    ProtocolConformance {
+        protocol: "Copyable".into(),
+        negated: true,
+    }
+}
+
+/// Creates a `~Sendable` constraint for types that are not thread-safe.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let non_sendable = swift::non_sendable();
+/// let toks = quote!($non_sendable);
+///
+/// assert_eq!("~Sendable", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn non_sendable() -> ProtocolConformance {
+    ProtocolConformance {
+        protocol: "Sendable".into(),
+        negated: true,
+    }
+}
+
+/// Creates a property wrapper decorator.
+///
+/// Property wrappers are common in SwiftUI for state management.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let state = swift::property_wrapper("State", None::<&str>);
+/// let toks = quote!($state var count: Int = 0);
+///
+/// assert_eq!("@State var count: Int = 0", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+///
+/// With arguments:
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let published = swift::property_wrapper("Published", Some("initialValue: 0"));
+/// let toks = quote!($published var count: Int);
+///
+/// assert_eq!("@Published(initialValue: 0) var count: Int", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn property_wrapper(
+    name: impl Into<ItemStr>,
+    arguments: Option<impl Into<ItemStr>>,
+) -> PropertyWrapper {
+    PropertyWrapper {
+        name: name.into(),
+        arguments: arguments.map(|a| a.into()),
+    }
+}
+
+/// Creates an attached macro decorator.
+///
+/// Attached macros can modify declarations by adding members, attributes, etc.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let macro_decl = swift::attached_macro("member", "named(_:)");
+/// let toks = quote!($macro_decl);
+///
+/// assert_eq!("@attached(member, names: named(_:))", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn attached_macro(
+    macro_type: impl Into<ItemStr>,
+    names: impl Into<ItemStr>,
+) -> AttachedMacro {
+    AttachedMacro {
+        macro_type: macro_type.into(),
+        names: names.into(),
+    }
+}
+
+/// Creates a freestanding macro decorator.
+///
+/// Freestanding macros are used as expressions or declarations.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let expr_macro = swift::freestanding_macro("expression");
+/// let toks = quote!($expr_macro);
+///
+/// assert_eq!("@freestanding(expression)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn freestanding_macro(macro_type: impl Into<ItemStr>) -> FreestandingMacro {
+    FreestandingMacro {
+        macro_type: macro_type.into(),
+    }
+}
+
+/// Creates a `@resultBuilder` decorator.
+///
+/// Result builders enable DSL-style syntax, commonly used in SwiftUI.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let builder = swift::result_builder();
+/// let toks = quote! {
+///     $builder
+///     struct ViewBuilder {
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@resultBuilder",
+///         "struct ViewBuilder {",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn result_builder() -> ResultBuilder {
+    ResultBuilder {}
+}
+
+/// Creates a `@MainActor` decorator.
+///
+/// MainActor marks types or functions as isolated to the main actor,
+/// ensuring they run on the main thread.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let main_actor = swift::main_actor();
+/// let toks = quote! {
+///     $main_actor
+///     class ViewController {
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@MainActor",
+///         "class ViewController {",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn main_actor() -> MainActor {
+    MainActor {}
+}
+
+/// Creates an `async` modifier for async functions.
+///
+/// The `async` keyword marks a function as asynchronous in Swift's structured concurrency.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let async_mod = swift::async_modifier();
+/// let toks = quote!(func fetchData() $async_mod -> Data);
+///
+/// assert_eq!("func fetchData() async -> Data", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn async_modifier() -> AsyncModifier {
+    AsyncModifier::Async
+}
+
+/// Creates an `await` keyword for calling async functions.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let await_kw = swift::await_keyword();
+/// let toks = quote!(let data = $await_kw fetchData());
+///
+/// assert_eq!("let data = await fetchData()", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn await_keyword() -> AsyncModifier {
+    AsyncModifier::Await
+}
+
+/// Creates a `throws` modifier for functions that can throw errors.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let throws_mod = swift::throws_modifier();
+/// let toks = quote!(func riskyOperation() $throws_mod -> Result);
+///
+/// assert_eq!("func riskyOperation() throws -> Result", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn throws_modifier() -> AsyncModifier {
+    AsyncModifier::Throws
+}
+
+/// Creates a `nonisolated` modifier for opting out of actor isolation.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let nonisolated_mod = swift::nonisolated_modifier();
+/// let toks = quote!($nonisolated_mod func helper() -> String);
+///
+/// assert_eq!("nonisolated func helper() -> String", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn nonisolated_modifier() -> IsolationModifier {
+    IsolationModifier::Nonisolated
+}
+
+/// Creates an `isolated` modifier for explicit actor isolation.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let isolated_mod = swift::isolated_modifier();
+/// let toks = quote!(func process($isolated_mod actor: MyActor));
+///
+/// assert_eq!("func process(isolated actor: MyActor)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn isolated_modifier() -> IsolationModifier {
+    IsolationModifier::Isolated
+}
+
+/// Creates an `actor` keyword for declaring actor types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let actor_kw = swift::actor_type();
+/// let toks = quote! {
+///     $actor_kw Counter {
+///         var value: Int = 0
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "actor Counter {",
+///         "    var value: Int = 0",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn actor_type() -> ActorType {
+    ActorType {}
+}
+
+/// Creates an `any` type modifier for existential types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let any_type = swift::any_type();
+/// let toks = quote!(let items: [$any_type Collection]);
+///
+/// assert_eq!("let items: [any Collection]", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn any_type() -> TypeModifier {
+    TypeModifier::Any
+}
+
+/// Creates a `some` type modifier for opaque types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let some_type = swift::some_type();
+/// let toks = quote!(var body: $some_type View);
+///
+/// assert_eq!("var body: some View", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn some_type() -> TypeModifier {
+    TypeModifier::Some
+}
+
+/// Creates a typed throws specification.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let typed_throws = swift::typed_throws("NetworkError");
+/// let toks = quote!(func fetch() $typed_throws -> Data);
+///
+/// assert_eq!("func fetch() throws(NetworkError) -> Data", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn typed_throws(error_type: impl Into<ItemStr>) -> TypedThrows {
+    TypedThrows {
+        error_type: error_type.into(),
+    }
+}
+
+/// Creates an `@Observable` decorator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let observable = swift::observable();
+/// let toks = quote! {
+///     $observable
+///     class DataModel {
+///         var name: String = ""
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@Observable",
+///         "class DataModel {",
+///         "    var name: String = \"\"",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn observable() -> ObservableDecorator {
+    ObservableDecorator {}
+}
+
+/// Creates a custom global actor decorator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let ui_actor = swift::global_actor("UIActor");
+/// let toks = quote! {
+///     $ui_actor
+///     class UIManager {
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@UIActor",
+///         "class UIManager {",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn global_actor(name: impl Into<ItemStr>) -> GlobalActor {
+    GlobalActor {
+        name: name.into(),
+    }
+}
+
+/// Creates a `package` access modifier.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let package_mod = swift::package_access();
+/// let toks = quote!($package_mod class InternalUtility {});
+///
+/// assert_eq!("package class InternalUtility {}", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn package_access() -> AccessModifier {
+    AccessModifier::Package
+}
+
+/// Creates an `@available` attribute for platform availability.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let available = swift::available("iOS 15, *");
+/// let toks = quote! {
+///     $available
+///     func newFeature() {}
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@available(iOS 15, *)",
+///         "func newFeature() {}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn available(spec: impl Into<ItemStr>) -> AvailabilityAttribute {
+    AvailabilityAttribute {
+        spec: spec.into(),
+    }
+}
+
+/// Creates an `@escaping` modifier for closure parameters.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let escaping = swift::escaping();
+/// let toks = quote!(func execute(completion: $escaping () -> Void));
+///
+/// assert_eq!("func execute(completion: @escaping () -> Void)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn escaping() -> ClosureModifier {
+    ClosureModifier::Escaping
+}
+
+/// Creates an `@autoclosure` modifier for closure parameters.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let autoclosure = swift::autoclosure();
+/// let toks = quote!(func assert(_ condition: $autoclosure () -> Bool));
+///
+/// assert_eq!("func assert(_ condition: @autoclosure () -> Bool)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn autoclosure() -> ClosureModifier {
+    ClosureModifier::Autoclosure
+}
+
+/// Creates a `@Sendable` attribute for closures.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let sendable = swift::sendable();
+/// let toks = quote!(let handler: $sendable () -> Void);
+///
+/// assert_eq!("let handler: @Sendable () -> Void", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn sendable() -> SendableAttribute {
+    SendableAttribute {}
+}
+
+/// Creates a `@main` attribute for application entry points.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let main_attr = swift::main_attribute();
+/// let toks = quote! {
+///     $main_attr
+///     struct MyApp {
+///         static func main() {}
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@main",
+///         "struct MyApp {",
+///         "    static func main() {}",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn main_attribute() -> MainAttribute {
+    MainAttribute {}
+}
+
+/// Creates an `@objc` attribute for Objective-C interop.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let objc = swift::objc(None::<&str>);
+/// let toks = quote! {
+///     $objc
+///     class MyClass: NSObject {}
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@objc",
+///         "class MyClass: NSObject {}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+///
+/// With custom name:
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let objc = swift::objc(Some("CustomName"));
+/// let toks = quote!($objc func myMethod());
+///
+/// assert_eq!("@objc(CustomName) func myMethod()", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn objc(name: Option<impl Into<ItemStr>>) -> ObjCAttribute {
+    ObjCAttribute {
+        name: name.map(|n| n.into()),
+    }
+}
+
+/// Creates an `@IBOutlet` attribute for Interface Builder outlets.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let ib_outlet = swift::ib_outlet();
+/// let toks = quote!($ib_outlet weak var label: UILabel!);
+///
+/// assert_eq!("@IBOutlet weak var label: UILabel!", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn ib_outlet() -> IBAttribute {
+    IBAttribute::IBOutlet
+}
+
+/// Creates an `@IBAction` attribute for Interface Builder actions.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let ib_action = swift::ib_action();
+/// let toks = quote!($ib_action func buttonTapped(_ sender: UIButton));
+///
+/// assert_eq!("@IBAction func buttonTapped(_ sender: UIButton)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn ib_action() -> IBAttribute {
+    IBAttribute::IBAction
 }
