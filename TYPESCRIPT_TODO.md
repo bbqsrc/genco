@@ -23,15 +23,15 @@ This document tracks TypeScript features that are not yet implemented in genco.
 - [ ] Support rest elements in tuples
 - [ ] Support labeled tuple elements: `[name: string, age: number]`
 
-## Priority 2: Generic System
+## Priority 2: Generic System ✅ COMPLETE
 
 ### Generic Type Parameters
-- [ ] Add generics to interfaces: `Interface::with_generics(vec!["T", "U"])`
-- [ ] Add generics to type aliases: `TypeAlias::with_generics(vec!["T"])`
+- [x] Add generics to interfaces: `Interface::with_generic_params(vec![GenericParam])`
+- [x] Add generics to type aliases: `TypeAlias::with_generic_params(vec![GenericParam])`
+- [x] Support generic constraints: `GenericParam::with_constraint(TypeRef)`
+- [x] Support default generic parameters: `GenericParam::with_default(TypeRef)`
 - [ ] Add generics to classes (if class builder is added)
-- [ ] Support generic constraints: `TypeParam::with_constraint("T", "extends SomeType")`
-- [ ] Support default generic parameters: `TypeParam::with_default("T", "string")`
-- [ ] Support multiple constraints: `T extends A & B`
+- [ ] Support multiple constraints: `T extends A & B` (can use intersection types)
 
 ## Priority 3: Advanced Type Features
 

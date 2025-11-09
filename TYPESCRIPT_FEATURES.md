@@ -81,6 +81,13 @@ ts::tuple_type(elements: Vec<TypeRef>) -> TupleType
 ts::param(name, type_ref) -> FunctionParam
 FunctionParam::optional() -> FunctionParam
 ts::function_signature(name, params, return_type) -> FunctionSignature
+
+// Generic type parameters
+ts::generic_param(name) -> GenericParam
+GenericParam::with_constraint(type_ref) -> GenericParam
+GenericParam::with_default(type_ref) -> GenericParam
+Interface::with_generic_params(vec![GenericParam]) -> Interface
+TypeAlias::with_generic_params(vec![GenericParam]) -> TypeAlias
 ```
 
 ### Configuration
@@ -106,10 +113,10 @@ The following TypeScript features are **not currently supported** and would requ
 - ❌ **Arrow Function Signatures**: No helper for arrow function types
 
 ### Advanced Features
-- ❌ **Generics on Interfaces**: `interface Foo<T> {}`
-- ❌ **Generics on Classes**: `class Foo<T> {}`
-- ❌ **Generic Constraints**: `<T extends SomeType>`
-- ❌ **Default Generic Parameters**: `<T = string>`
+- ✅ **Generics on Interfaces**: `interface Foo<T> {}`
+- ✅ **Generic Constraints**: `<T extends SomeType>`
+- ✅ **Default Generic Parameters**: `<T = string>`
+- ❌ **Generics on Classes**: `class Foo<T> {}` (classes not yet supported)
 - ❌ **Decorators**: `@Component`, `@Input`, etc.
 - ❌ **Abstract Classes**: `abstract class Foo {}`
 - ❌ **Access Modifiers**: `public`, `private`, `protected`
@@ -206,21 +213,22 @@ let tokens: ts::Tokens = quote! {
 |----------|-------------|-----------------|----------|
 | Import System | 8 | 5 | 61% |
 | Basic Types | 10 | 3 | 77% |
-| Interfaces | 5 | 5 | 50% |
-| Type Aliases | 1 | 0 | 100% |
+| Interfaces | 6 | 4 | 60% |
+| Type Aliases | 2 | 0 | 100% |
 | Enums | 2 | 0 | 100% |
 | Union/Intersection | 2 | 0 | 100% |
 | Literal Types | 5 | 0 | 100% |
 | Tuple Types | 1 | 0 | 100% |
 | Function Signatures | 3 | 1 | 75% |
-| Generics | 1 | 4 | 20% |
-| Advanced Features | 0 | 13 | 0% |
-| **Overall** | **38** | **31** | **55%** |
+| Generics | 4 | 1 | 80% |
+| Advanced Features | 3 | 10 | 23% |
+| **Overall** | **46** | **24** | **66%** |
 
 ## 🎯 Recommended Usage
 
 **TypeScript support in genco is best suited for:**
 - ✅ Generating TypeScript interfaces and type definitions
+- ✅ Creating generic interfaces and type aliases with constraints
 - ✅ Creating TypeScript modules with proper imports
 - ✅ Building type-safe data models with union and intersection types
 - ✅ Generating enum definitions
@@ -228,6 +236,7 @@ let tokens: ts::Tokens = quote! {
 - ✅ Generating function signatures with typed parameters
 - ✅ Building tuple types for structured data
 - ✅ Creating discriminated unions with literal types
+- ✅ Generating reusable generic components and utilities
 
 **For more complex TypeScript features:**
 - Use `quote!{}` to write code directly
@@ -238,9 +247,9 @@ let tokens: ts::Tokens = quote! {
 
 Potential areas for future development (in priority order):
 
-1. **Function Signatures**: Helpers for typed function parameters and return types
-2. **Union/Intersection Types**: Builder API for complex types
-3. **Generic Interfaces/Classes**: Support for generic type parameters
+1. **Mapped Types**: Support for `{ [P in keyof T]: T[P] }`
+2. **Conditional Types**: Support for `T extends U ? X : Y`
+3. **Index Signatures**: Support for `[key: string]: any`
 4. **Type Guards**: Helper for type predicate functions
 5. **Decorators**: Support for Angular/NestJS-style decorators
 6. **Utility Types**: Builders for `Partial<T>`, `Pick<T, K>`, etc.
@@ -252,7 +261,8 @@ Potential areas for future development (in priority order):
 See `examples/ts.rs` for a complete working example that demonstrates:
 - Type-only imports
 - Interface definitions with optional and readonly properties
-- Type aliases
+- Generic interfaces and type aliases
+- Type aliases with union and literal types
 - Enums with string values
 - Generic type references
 - Integration with React component generation
@@ -262,4 +272,11 @@ Run the example:
 cargo run --example ts
 ```
 
-See `tests/test_ts.rs` for 18 comprehensive test cases covering all implemented features.
+See `tests/test_ts.rs` for 38 comprehensive test cases covering all implemented features, including:
+- Basic quoting and imports (8 tests)
+- Type references and interfaces (4 tests)
+- Type aliases and enums (3 tests)
+- Union, intersection, literal, and tuple types (6 tests)
+- Function signatures (4 tests)
+- Generic interfaces and type aliases (11 tests)
+- Module path resolution (2 tests)
