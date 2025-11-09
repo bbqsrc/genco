@@ -1717,3 +1717,34 @@ fn test_method_signature_with_properties() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_template_literal_type() -> genco::fmt::Result {
+    let event_type = ts::type_alias(
+        "EventName",
+        ts::template_literal_type(vec![ts::type_ref("string"), ts::type_ref("number")]),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $event_type
+    };
+
+    assert_eq!(
+        vec!["type EventName = `${string}-${number}`;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_type_assertion() -> genco::fmt::Result {
+    // Note: Type assertions are usually used in expressions, but we can demonstrate the syntax
+    let assertion = ts::type_assertion("someValue", ts::type_ref("string"));
+
+    let toks: ts::Tokens = quote! {
+        $assertion
+    };
+
+    assert_eq!(vec!["someValue as string"], toks.to_file_vec()?);
+    Ok(())
+}

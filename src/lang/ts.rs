@@ -1993,6 +1993,145 @@ where
     MethodSignature::new(name, params, return_type)
 }
 
+/// A TypeScript template literal type.
+///
+/// Template literal types allow creating string literal types with interpolation.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // `${string}-${number}`
+/// let template = ts::template_literal_type(vec![
+///     ts::type_ref("string"),
+///     ts::type_ref("number"),
+/// ]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct TemplateLiteralType {
+    parts: Vec<Tokens>,
+}
+
+impl TemplateLiteralType {
+    /// Create a new template literal type.
+    pub fn new<I, T>(parts: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: FormatInto<TypeScript>,
+    {
+        let parts = parts
+            .into_iter()
+            .map(|part| {
+                let mut tokens = Tokens::new();
+                tokens.append(part);
+                tokens
+            })
+            .collect();
+        Self { parts }
+    }
+}
+
+impl FormatInto<TypeScript> for TemplateLiteralType {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("`");
+
+        for (i, part) in self.parts.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append("-");
+            }
+            tokens.append("${");
+            tokens.append(part);
+            tokens.append("}");
+        }
+
+        tokens.append("`");
+    }
+}
+
+/// Create a TypeScript template literal type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // `${string}-${number}`
+/// let template = ts::template_literal_type(vec![
+///     ts::type_ref("string"),
+///     ts::type_ref("number"),
+/// ]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn template_literal_type<I, T>(parts: I) -> TemplateLiteralType
+where
+    I: IntoIterator<Item = T>,
+    T: FormatInto<TypeScript>,
+{
+    TemplateLiteralType::new(parts)
+}
+
+/// A TypeScript type assertion.
+///
+/// Type assertions allow overriding the inferred type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // value as string
+/// let assertion = ts::type_assertion("value", ts::type_ref("string"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct TypeAssertion {
+    value: ItemStr,
+    type_ref: TypeRef,
+}
+
+impl TypeAssertion {
+    /// Create a new type assertion.
+    pub fn new<V>(value: V, type_ref: TypeRef) -> Self
+    where
+        V: Into<ItemStr>,
+    {
+        Self {
+            value: value.into(),
+            type_ref,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for TypeAssertion {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.value);
+        tokens.space();
+        tokens.append("as");
+        tokens.space();
+        tokens.append(self.type_ref);
+    }
+}
+
+/// Create a TypeScript type assertion using 'as' syntax.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // value as string
+/// let assertion = ts::type_assertion("value", ts::type_ref("string"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn type_assertion<V>(value: V, type_ref: TypeRef) -> TypeAssertion
+where
+    V: Into<ItemStr>,
+{
+    TypeAssertion::new(value, type_ref)
+}
+
 /// A TypeScript enum.
 ///
 /// # Examples
