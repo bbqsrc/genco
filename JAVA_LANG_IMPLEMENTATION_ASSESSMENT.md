@@ -1,7 +1,11 @@
-# Java Implementation Assessment - Java 11 Completeness
+# Java Language Implementation Assessment - Java 11 Features
+
+> **Note**: This document assesses the **Java language module** (`src/lang/java/mod.rs`), which provides Java-specific features like imports, string encoding, and package management.
+>
+> For assessment of the **`quote!` macro tokenizer** and its ability to parse Java 11 syntax, see: [`JAVA_QUOTE_TOKENIZER_ASSESSMENT.md`](JAVA_QUOTE_TOKENIZER_ASSESSMENT.md)
 
 **Date**: 2025-11-09
-**Scope**: Assessment of genco's Java code generation support up to Java 11
+**Scope**: Assessment of genco's Java language module support for Java 11 features
 **Current Implementation**: `src/lang/java/mod.rs` (283 lines)
 
 ---
