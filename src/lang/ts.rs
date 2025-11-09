@@ -989,6 +989,7 @@ where
 pub struct Interface {
     name: ItemStr,
     generic_params: Vec<GenericParam>,
+    extends_interfaces: Vec<TypeRef>,
     properties: Vec<Property>,
     index_signature: Option<IndexSignature>,
 }
@@ -1002,6 +1003,7 @@ impl Interface {
         Self {
             name: name.into(),
             generic_params: Vec::new(),
+            extends_interfaces: Vec::new(),
             properties: Vec::new(),
             index_signature: None,
         }
@@ -1021,6 +1023,31 @@ impl Interface {
     /// ```
     pub fn with_generic_params(mut self, generic_params: Vec<GenericParam>) -> Self {
         self.generic_params = generic_params;
+        self
+    }
+
+    /// Add extends clause to the interface for inheritance.
+    ///
+    /// Supports both single and multiple interface inheritance.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// // Single inheritance
+    /// let user = ts::interface("User")
+    ///     .with_extends(vec![ts::type_ref("Base")])
+    ///     .with_property(ts::property("name", ts::type_ref("string")));
+    ///
+    /// // Multiple inheritance
+    /// let admin = ts::interface("Admin")
+    ///     .with_extends(vec![ts::type_ref("User"), ts::type_ref("Permissions")])
+    ///     .with_property(ts::property("role", ts::type_ref("string")));
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_extends(mut self, extends_interfaces: Vec<TypeRef>) -> Self {
+        self.extends_interfaces = extends_interfaces;
         self
     }
 
@@ -1070,6 +1097,20 @@ impl FormatInto<TypeScript> for Interface {
                 tokens.append(param);
             }
             tokens.append(">");
+        }
+
+        // Add extends clause if present
+        if !self.extends_interfaces.is_empty() {
+            tokens.space();
+            tokens.append("extends");
+            tokens.space();
+            for (i, type_ref) in self.extends_interfaces.into_iter().enumerate() {
+                if i > 0 {
+                    tokens.append(",");
+                    tokens.space();
+                }
+                tokens.append(type_ref);
+            }
         }
 
         tokens.space();

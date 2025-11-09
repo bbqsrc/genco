@@ -954,3 +954,116 @@ fn test_index_signature_with_generics() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_interface_extends_single() -> genco::fmt::Result {
+    let user = ts::interface("User")
+        .with_extends(vec![ts::type_ref("Base")])
+        .with_property(ts::property("name", ts::type_ref("string")))
+        .with_property(ts::property("email", ts::type_ref("string")));
+
+    let toks: ts::Tokens = quote! {
+        $user
+    };
+
+    assert_eq!(
+        vec![
+            "interface User extends Base {",
+            "    name: string;",
+            "    email: string;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_interface_extends_multiple() -> genco::fmt::Result {
+    let admin = ts::interface("Admin")
+        .with_extends(vec![ts::type_ref("User"), ts::type_ref("Permissions")])
+        .with_property(ts::property("role", ts::type_ref("string")));
+
+    let toks: ts::Tokens = quote! {
+        $admin
+    };
+
+    assert_eq!(
+        vec![
+            "interface Admin extends User, Permissions {",
+            "    role: string;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_interface_extends_with_generics() -> genco::fmt::Result {
+    let container = ts::interface("Container")
+        .with_generic_params(vec![ts::generic_param("T")])
+        .with_extends(vec![ts::type_ref("Base").with_generics(vec![ts::type_ref("T")])])
+        .with_property(ts::property("value", ts::type_ref("T")));
+
+    let toks: ts::Tokens = quote! {
+        $container
+    };
+
+    assert_eq!(
+        vec![
+            "interface Container<T> extends Base<T> {",
+            "    value: T;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_interface_extends_generic_constraint() -> genco::fmt::Result {
+    let repository = ts::interface("Repository")
+        .with_generic_params(vec![
+            ts::generic_param("T").with_constraint(ts::type_ref("Entity"))
+        ])
+        .with_extends(vec![ts::type_ref("BaseRepository").with_generics(vec![ts::type_ref("T")])])
+        .with_property(ts::property("items", ts::type_ref("T").with_generics(vec![])));
+
+    let toks: ts::Tokens = quote! {
+        $repository
+    };
+
+    assert_eq!(
+        vec![
+            "interface Repository<T extends Entity> extends BaseRepository<T> {",
+            "    items: T;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_interface_extends_with_index_signature() -> genco::fmt::Result {
+    let extended_map = ts::interface("ExtendedMap")
+        .with_extends(vec![ts::type_ref("BaseMap")])
+        .with_index_signature(ts::index_signature_string("key", ts::type_ref("any")))
+        .with_property(ts::property("size", ts::type_ref("number")));
+
+    let toks: ts::Tokens = quote! {
+        $extended_map
+    };
+
+    assert_eq!(
+        vec![
+            "interface ExtendedMap extends BaseMap {",
+            "    [key: string]: any;",
+            "    size: number;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}

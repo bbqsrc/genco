@@ -51,6 +51,7 @@ TypeRef::with_generics(generics) -> TypeRef
 // Interfaces
 ts::interface(name) -> Interface
 Interface::with_property(property) -> Interface
+Interface::with_extends(interfaces: Vec<TypeRef>) -> Interface
 ts::property(name, type_ref) -> Property
 ts::optional_property(name, type_ref) -> Property
 Property::optional() -> Property
@@ -134,7 +135,7 @@ The following TypeScript features are **not currently supported** and would requ
 - ❌ **Ambient Declarations**: `.d.ts` file support
 
 ### Interface Features
-- ❌ **Extends Clause**: `interface Foo extends Bar {}`
+- ✅ **Extends Clause**: `interface Foo extends Bar {}`, `interface Foo extends Bar, Baz {}`
 - ✅ **Index Signatures**: `[key: string]: any`, `[index: number]: T`, `[key: symbol]: value`
 - ❌ **Call Signatures**: `(x: number): string`
 - ❌ **Construct Signatures**: `new (x: number): Foo`
@@ -219,7 +220,7 @@ let tokens: ts::Tokens = quote! {
 |----------|-------------|-----------------|----------|
 | Import System | 8 | 5 | 61% |
 | Basic Types | 10 | 3 | 77% |
-| Interfaces | 7 | 3 | 70% |
+| Interfaces | 8 | 2 | 80% |
 | Type Aliases | 2 | 0 | 100% |
 | Enums | 2 | 0 | 100% |
 | Union/Intersection | 2 | 0 | 100% |
@@ -228,7 +229,7 @@ let tokens: ts::Tokens = quote! {
 | Function Signatures | 3 | 1 | 75% |
 | Generics | 4 | 1 | 80% |
 | Advanced Features | 4 | 9 | 31% |
-| **Overall** | **48** | **22** | **69%** |
+| **Overall** | **49** | **21** | **70%** |
 
 ## 🎯 Recommended Usage
 
@@ -278,7 +279,7 @@ Run the example:
 cargo run --example ts
 ```
 
-See `tests/test_ts.rs` for 43 comprehensive test cases covering all implemented features, including:
+See `tests/test_ts.rs` for 48 comprehensive test cases covering all implemented features, including:
 - Basic quoting and imports (8 tests)
 - Type references and interfaces (4 tests)
 - Type aliases and enums (3 tests)
@@ -286,4 +287,5 @@ See `tests/test_ts.rs` for 43 comprehensive test cases covering all implemented 
 - Function signatures (4 tests)
 - Generic interfaces and type aliases (11 tests)
 - Index signatures (5 tests)
+- Interface extends clause (5 tests)
 - Module path resolution (2 tests)

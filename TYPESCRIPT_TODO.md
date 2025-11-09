@@ -59,9 +59,10 @@ This document tracks TypeScript features that are not yet implemented in genco.
 
 ## Priority 4: Interface and Type Enhancements
 
-### Interface Extensions
-- [ ] Add extends clause to interfaces: `Interface::extends(parent_interface)`
-- [ ] Support multiple interface inheritance
+### Interface Extensions ✅ COMPLETE
+- [x] Add extends clause to interfaces: `Interface::with_extends(vec![parent_interface])`
+- [x] Support single interface inheritance: `interface Foo extends Bar {}`
+- [x] Support multiple interface inheritance: `interface Foo extends Bar, Baz {}`
 - [ ] Support interface merging
 
 ### Method and Call Signatures
