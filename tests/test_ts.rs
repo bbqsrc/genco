@@ -1245,3 +1245,183 @@ fn test_call_signature_with_optional_params() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_keyof_operator() -> genco::fmt::Result {
+    let keys_type = ts::type_alias("UserKeys", ts::keyof(ts::type_ref("User")));
+
+    let toks: ts::Tokens = quote! {
+        $keys_type
+    };
+
+    assert_eq!(
+        vec!["type UserKeys = keyof User;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_indexed_access_type() -> genco::fmt::Result {
+    let indexed = ts::type_alias("UserName", ts::type_ref("User").indexed_by("name"));
+
+    let toks: ts::Tokens = quote! {
+        $indexed
+    };
+
+    assert_eq!(
+        vec!["type UserName = User[name];"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mapped_type_simple() -> genco::fmt::Result {
+    let mapped = ts::type_alias(
+        "StringMap",
+        ts::mapped_type("K", ts::type_ref("string"), ts::type_ref("string")),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $mapped
+    };
+
+    assert_eq!(
+        vec![
+            "type StringMap = {",
+            "    [K in string]: string;",
+            "};"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mapped_type_readonly() -> genco::fmt::Result {
+    let readonly = ts::type_alias(
+        "Readonly",
+        ts::mapped_type("P", ts::keyof(ts::type_ref("T")), ts::type_ref("T").indexed_by("P"))
+            .readonly(),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $readonly
+    };
+
+    assert_eq!(
+        vec![
+            "type Readonly<T> = {",
+            "    readonly [P in keyof T]: T[P];",
+            "};"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mapped_type_optional() -> genco::fmt::Result {
+    let partial = ts::type_alias(
+        "Partial",
+        ts::mapped_type("P", ts::keyof(ts::type_ref("T")), ts::type_ref("T").indexed_by("P"))
+            .optional(),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $partial
+    };
+
+    assert_eq!(
+        vec![
+            "type Partial<T> = {",
+            "    [P in keyof T]?: T[P];",
+            "};"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mapped_type_required() -> genco::fmt::Result {
+    let required = ts::type_alias(
+        "Required",
+        ts::mapped_type("P", ts::keyof(ts::type_ref("T")), ts::type_ref("T").indexed_by("P"))
+            .required(),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $required
+    };
+
+    assert_eq!(
+        vec![
+            "type Required<T> = {",
+            "    [P in keyof T]-?: T[P];",
+            "};"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mapped_type_pick() -> genco::fmt::Result {
+    let pick = ts::type_alias(
+        "Pick",
+        ts::mapped_type("P", ts::type_ref("K"), ts::type_ref("T").indexed_by("P")),
+    )
+    .with_generic_params(vec![
+        ts::generic_param("T"),
+        ts::generic_param("K").with_constraint(ts::keyof(ts::type_ref("T"))),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        $pick
+    };
+
+    assert_eq!(
+        vec![
+            "type Pick<T, K extends keyof T> = {",
+            "    [P in K]: T[P];",
+            "};"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mapped_type_record() -> genco::fmt::Result {
+    let record = ts::type_alias(
+        "Record",
+        ts::mapped_type("P", ts::type_ref("K"), ts::type_ref("T")),
+    )
+    .with_generic_params(vec![
+        ts::generic_param("K").with_constraint(ts::union_type(vec![
+            ts::type_ref("string"),
+            ts::type_ref("number"),
+            ts::type_ref("symbol"),
+        ])),
+        ts::generic_param("T"),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        $record
+    };
+
+    assert_eq!(
+        vec![
+            "type Record<K extends string | number | symbol, T> = {",
+            "    [P in K]: T;",
+            "};"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}

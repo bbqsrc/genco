@@ -658,6 +658,7 @@ where
 pub struct TypeRef {
     name: ItemStr,
     generics: Vec<TypeRef>,
+    index: Option<ItemStr>,
 }
 
 impl TypeRef {
@@ -669,12 +670,34 @@ impl TypeRef {
         Self {
             name: name.into(),
             generics: Vec::new(),
+            index: None,
         }
     }
 
     /// Add generic type parameters.
     pub fn with_generics(self, generics: Vec<TypeRef>) -> Self {
         Self { generics, ..self }
+    }
+
+    /// Add indexed access to this type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// // T[P]
+    /// let indexed = ts::type_ref("T").indexed_by("P");
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn indexed_by<I>(self, index: I) -> Self
+    where
+        I: Into<ItemStr>,
+    {
+        Self {
+            index: Some(index.into()),
+            ..self
+        }
     }
 }
 
@@ -694,6 +717,12 @@ impl FormatInto<TypeScript> for TypeRef {
             }
 
             tokens.append(">");
+        }
+
+        if let Some(index) = self.index {
+            tokens.append("[");
+            tokens.append(index);
+            tokens.append("]");
         }
     }
 }
@@ -748,8 +777,8 @@ where
 #[derive(Debug, Clone)]
 pub struct GenericParam {
     name: ItemStr,
-    constraint: Option<TypeRef>,
-    default: Option<TypeRef>,
+    constraint: Option<Tokens>,
+    default: Option<Tokens>,
 }
 
 impl GenericParam {
@@ -766,17 +795,27 @@ impl GenericParam {
     }
 
     /// Add a constraint to this generic parameter (e.g., `T extends Base`).
-    pub fn with_constraint(self, constraint: TypeRef) -> Self {
+    pub fn with_constraint<C>(self, constraint: C) -> Self
+    where
+        C: FormatInto<TypeScript>,
+    {
+        let mut tokens = Tokens::new();
+        tokens.append(constraint);
         Self {
-            constraint: Some(constraint),
+            constraint: Some(tokens),
             ..self
         }
     }
 
     /// Add a default type to this generic parameter (e.g., `T = string`).
-    pub fn with_default(self, default: TypeRef) -> Self {
+    pub fn with_default<D>(self, default: D) -> Self
+    where
+        D: FormatInto<TypeScript>,
+    {
+        let mut tokens = Tokens::new();
+        tokens.append(default);
         Self {
-            default: Some(default),
+            default: Some(tokens),
             ..self
         }
     }
@@ -1419,6 +1458,187 @@ where
     T: FormatInto<TypeScript>,
 {
     TypeAlias::new(name, type_expr)
+}
+
+/// A TypeScript keyof operator.
+///
+/// Represents the `keyof T` type operator that creates a union of property keys.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let keys = ts::keyof(ts::type_ref("User"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct KeyofOperator {
+    type_ref: TypeRef,
+}
+
+impl KeyofOperator {
+    /// Create a new keyof operator.
+    pub fn new(type_ref: TypeRef) -> Self {
+        Self { type_ref }
+    }
+}
+
+impl FormatInto<TypeScript> for KeyofOperator {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("keyof");
+        tokens.space();
+        tokens.append(self.type_ref);
+    }
+}
+
+/// Create a TypeScript keyof operator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let keys = ts::keyof(ts::type_ref("User"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn keyof(type_ref: TypeRef) -> KeyofOperator {
+    KeyofOperator::new(type_ref)
+}
+
+/// Property modifier for mapped types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PropertyModifier {
+    /// Add optional modifier: `?`
+    Optional,
+    /// Add required modifier: `-?`
+    Required,
+    /// No modifier
+    None,
+}
+
+/// A TypeScript mapped type.
+///
+/// Mapped types allow transforming properties of one type into another.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // type Readonly<T> = { readonly [P in keyof T]: T[P] }
+/// let readonly = ts::type_alias("Readonly",
+///     ts::mapped_type("P", ts::keyof(ts::type_ref("T")), ts::type_ref("T").indexed_by("P"))
+///         .readonly()
+/// )
+/// .with_generic_params(vec![ts::generic_param("T")]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct MappedType {
+    key_param: ItemStr,
+    constraint: Tokens,
+    value_type: Tokens,
+    readonly: bool,
+    modifier: PropertyModifier,
+}
+
+impl MappedType {
+    /// Create a new mapped type.
+    pub fn new<K, C, V>(key_param: K, constraint: C, value_type: V) -> Self
+    where
+        K: Into<ItemStr>,
+        C: FormatInto<TypeScript>,
+        V: FormatInto<TypeScript>,
+    {
+        let mut constraint_tokens = Tokens::new();
+        constraint_tokens.append(constraint);
+
+        let mut value_tokens = Tokens::new();
+        value_tokens.append(value_type);
+
+        Self {
+            key_param: key_param.into(),
+            constraint: constraint_tokens,
+            value_type: value_tokens,
+            readonly: false,
+            modifier: PropertyModifier::None,
+        }
+    }
+
+    /// Mark properties as readonly.
+    pub fn readonly(mut self) -> Self {
+        self.readonly = true;
+        self
+    }
+
+    /// Add optional modifier to properties.
+    pub fn optional(mut self) -> Self {
+        self.modifier = PropertyModifier::Optional;
+        self
+    }
+
+    /// Add required modifier to properties (removes optional).
+    pub fn required(mut self) -> Self {
+        self.modifier = PropertyModifier::Required;
+        self
+    }
+}
+
+impl FormatInto<TypeScript> for MappedType {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("{");
+        tokens.indent();
+        tokens.push();
+
+        if self.readonly {
+            tokens.append("readonly");
+            tokens.space();
+        }
+
+        tokens.append("[");
+        tokens.append(self.key_param);
+        tokens.space();
+        tokens.append("in");
+        tokens.space();
+        tokens.append(self.constraint);
+        tokens.append("]");
+
+        match self.modifier {
+            PropertyModifier::Optional => tokens.append("?"),
+            PropertyModifier::Required => tokens.append("-?"),
+            PropertyModifier::None => {}
+        }
+
+        tokens.append(":");
+        tokens.space();
+        tokens.append(self.value_type);
+        tokens.append(";");
+
+        tokens.unindent();
+        tokens.push();
+        tokens.append("}");
+    }
+}
+
+/// Create a TypeScript mapped type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // { [P in keyof T]: T[P] }
+/// let mapped = ts::mapped_type("P", ts::keyof(ts::type_ref("T")), ts::type_ref("T").indexed_by("P"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn mapped_type<K, C, V>(key_param: K, constraint: C, value_type: V) -> MappedType
+where
+    K: Into<ItemStr>,
+    C: FormatInto<TypeScript>,
+    V: FormatInto<TypeScript>,
+{
+    MappedType::new(key_param, constraint, value_type)
 }
 
 /// A TypeScript enum.

@@ -41,11 +41,14 @@ This document tracks TypeScript features that are not yet implemented in genco.
 - [x] Support number index signatures: `ts::index_signature_number(key, value_type)`
 - [x] Support symbol index signatures: `ts::index_signature_symbol(key, value_type)`
 
-### Mapped Types
-- [ ] Implement mapped type builder: `ts::mapped_type(key_type, value_type)`
-- [ ] Support `keyof` operator
-- [ ] Support `in` operator for mapped types
-- [ ] Support mapped type modifiers: `+readonly`, `-?`, etc.
+### Mapped Types ✅ COMPLETE
+- [x] Implement mapped type builder: `ts::mapped_type(key_param, constraint, value_type)`
+- [x] Support `keyof` operator: `ts::keyof(type_ref)`
+- [x] Support indexed access types: `TypeRef::indexed_by(index)` for `T[K]`
+- [x] Support `in` operator for mapped types
+- [x] Support readonly modifier: `MappedType::readonly()`
+- [x] Support optional modifier: `MappedType::optional()`
+- [x] Support required modifier: `MappedType::required()`
 
 ### Conditional Types
 - [ ] Implement conditional type: `ts::conditional_type(check, extends, true_type, false_type)`
