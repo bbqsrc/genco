@@ -391,3 +391,363 @@ fn test_all_ownership_modifiers_in_one_function() {
         toks.to_file_vec().unwrap()
     );
 }
+
+// ========== Async/Await and Concurrency Tests ==========
+
+#[test]
+fn test_async_modifier() {
+    let async_mod = swift::async_modifier();
+    let toks: swift::Tokens = quote!(func fetchData() $async_mod -> Data);
+
+    assert_eq!("func fetchData() async -> Data", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_await_keyword() {
+    let await_kw = swift::await_keyword();
+    let toks: swift::Tokens = quote!(let data = $await_kw fetchData());
+
+    assert_eq!("let data = await fetchData()", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_throws_modifier() {
+    let throws_mod = swift::throws_modifier();
+    let toks: swift::Tokens = quote!(func riskyOperation() $throws_mod -> Result);
+
+    assert_eq!("func riskyOperation() throws -> Result", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_async_throws_function() {
+    let async_mod = swift::async_modifier();
+    let throws_mod = swift::throws_modifier();
+    let await_kw = swift::await_keyword();
+
+    let toks: swift::Tokens = quote! {
+        func loadData() $async_mod $throws_mod -> Data {
+            let response = $await_kw URLSession.shared.data(from: url)
+            return response.0
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "func loadData() async throws -> Data {",
+            "    let response = await URLSession.shared.data(from: url)",
+            "    return response.0",
+            "}",
+        ],
+        toks.to_file_vec().unwrap()
+    );
+}
+
+#[test]
+fn test_actor_type() {
+    let actor_kw = swift::actor_type();
+
+    let toks: swift::Tokens = quote! {
+        $actor_kw Counter {
+            var value: Int = 0
+
+            func increment() {
+                value += 1
+            }
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "actor Counter {",
+            "    var value: Int = 0",
+            "",
+            "    func increment() {",
+            "        value += 1",
+            "    }",
+            "}",
+        ],
+        toks.to_file_vec().unwrap()
+    );
+}
+
+#[test]
+fn test_nonisolated_modifier() {
+    let nonisolated_mod = swift::nonisolated_modifier();
+
+    let toks: swift::Tokens = quote! {
+        actor MyActor {
+            $nonisolated_mod func helper() -> String {
+                return "I don't need actor isolation"
+            }
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("nonisolated func helper() -> String {")));
+}
+
+#[test]
+fn test_isolated_modifier() {
+    let isolated_mod = swift::isolated_modifier();
+    let toks: swift::Tokens = quote!(func process($isolated_mod actor: MyActor));
+
+    assert_eq!("func process(isolated actor: MyActor)", toks.to_string().unwrap());
+}
+
+// ========== Type Modifiers Tests ==========
+
+#[test]
+fn test_any_type() {
+    let any_type = swift::any_type();
+    let toks: swift::Tokens = quote!(let items: [$any_type Collection]);
+
+    assert_eq!("let items: [any Collection]", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_some_type() {
+    let some_type = swift::some_type();
+    let toks: swift::Tokens = quote!(var body: $some_type View);
+
+    assert_eq!("var body: some View", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_swiftui_view_with_some() {
+    let some_type = swift::some_type();
+    let state = swift::property_wrapper("State", None::<&str>);
+
+    let toks: swift::Tokens = quote! {
+        struct ContentView: View {
+            $state private var count: Int = 0
+
+            var body: $some_type View {
+                Text("Count: \\(count)")
+            }
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("var body: some View {")));
+}
+
+#[test]
+fn test_any_protocol_collection() {
+    let any_type = swift::any_type();
+
+    let toks: swift::Tokens = quote! {
+        func processShapes(shapes: [$any_type Shape]) {
+            for shape in shapes {
+                shape.draw()
+            }
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("func processShapes(shapes: [any Shape]) {")));
+}
+
+// ========== Typed Throws Tests ==========
+
+#[test]
+fn test_typed_throws() {
+    let typed_throws = swift::typed_throws("NetworkError");
+    let toks: swift::Tokens = quote!(func fetch() $typed_throws -> Data);
+
+    assert_eq!("func fetch() throws(NetworkError) -> Data", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_async_typed_throws() {
+    let async_mod = swift::async_modifier();
+    let typed_throws = swift::typed_throws("APIError");
+    let await_kw = swift::await_keyword();
+
+    let toks: swift::Tokens = quote! {
+        func loadUser(id: String) $async_mod $typed_throws -> User {
+            let data = $await_kw fetch(url: "/users/\\(id)")
+            return try decode(data)
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("func loadUser(id: String) async throws(APIError) -> User {")));
+}
+
+// ========== Observable Tests ==========
+
+#[test]
+fn test_observable() {
+    let observable = swift::observable();
+
+    let toks: swift::Tokens = quote! {
+        $observable
+        class UserModel {
+            var name: String = ""
+            var age: Int = 0
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "@Observable",
+            "class UserModel {",
+            "    var name: String = \"\"",
+            "    var age: Int = 0",
+            "}",
+        ],
+        toks.to_file_vec().unwrap()
+    );
+}
+
+// ========== Global Actor Tests ==========
+
+#[test]
+fn test_global_actor() {
+    let ui_actor = swift::global_actor("UIActor");
+
+    let toks: swift::Tokens = quote! {
+        $ui_actor
+        class UIManager {
+            func updateUI() {}
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("@UIActor")));
+}
+
+#[test]
+fn test_custom_database_actor() {
+    let db_actor = swift::global_actor("DatabaseActor");
+
+    let toks: swift::Tokens = quote! {
+        $db_actor
+        class DatabaseManager {
+            func execute(query: String) {}
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "@DatabaseActor",
+            "class DatabaseManager {",
+            "    func execute(query: String) {}",
+            "}",
+        ],
+        toks.to_file_vec().unwrap()
+    );
+}
+
+// ========== Package Access Tests ==========
+
+#[test]
+fn test_package_access() {
+    let package_mod = swift::package_access();
+    let toks: swift::Tokens = quote!($package_mod class InternalUtility {});
+
+    assert_eq!("package class InternalUtility {}", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_package_access_function() {
+    let package_mod = swift::package_access();
+
+    let toks: swift::Tokens = quote! {
+        $package_mod func helperFunction() -> String {
+            return "internal helper"
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("package func helperFunction() -> String {")));
+}
+
+// ========== Combined Feature Tests ==========
+
+#[test]
+fn test_comprehensive_swift_6_example() {
+    let actor_kw = swift::actor_type();
+    let async_mod = swift::async_modifier();
+    let throws_mod = swift::throws_modifier();
+    let await_kw = swift::await_keyword();
+    let nonisolated_mod = swift::nonisolated_modifier();
+    let main_actor = swift::main_actor();
+    let some_type = swift::some_type();
+    let any_type = swift::any_type();
+    let observable = swift::observable();
+
+    let toks: swift::Tokens = quote! {
+        $actor_kw DataStore {
+            private var cache: [String: Data] = [:]
+
+            func fetch(key: String) $async_mod $throws_mod -> Data? {
+                if let cached = cache[key] {
+                    return cached
+                }
+                let data = $await_kw loadFromNetwork(key: key)
+                cache[key] = data
+                return data
+            }
+
+            $nonisolated_mod func description() -> String {
+                return "DataStore"
+            }
+        }
+
+        $observable
+        class ViewModel {
+            var items: [$any_type Identifiable] = []
+        }
+
+        $main_actor
+        struct ContentView: View {
+            var body: $some_type View {
+                Text("Hello")
+            }
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("actor DataStore {")));
+    assert!(output.iter().any(|s| s.contains("func fetch(key: String) async throws -> Data? {")));
+    assert!(output.iter().any(|s| s.contains("nonisolated func description() -> String {")));
+    assert!(output.iter().any(|s| s.contains("@Observable")));
+    assert!(output.iter().any(|s| s.contains("var items: [any Identifiable] = []")));
+    assert!(output.iter().any(|s| s.contains("@MainActor")));
+    assert!(output.iter().any(|s| s.contains("var body: some View {")));
+}
+
+#[test]
+fn test_all_new_features_combined() {
+    let actor_kw = swift::actor_type();
+    let async_mod = swift::async_modifier();
+    let typed_throws = swift::typed_throws("NetworkError");
+    let await_kw = swift::await_keyword();
+    let isolated_mod = swift::isolated_modifier();
+    let some_type = swift::some_type();
+    let any_type = swift::any_type();
+    let global_actor = swift::global_actor("NetworkActor");
+    let package_mod = swift::package_access();
+
+    let toks: swift::Tokens = quote! {
+        $global_actor
+        $actor_kw NetworkManager {
+            $package_mod func request(url: String) $async_mod $typed_throws -> $some_type Response {
+                return $await_kw URLSession.shared.data(from: URL(string: url)!)
+            }
+        }
+
+        func processData($isolated_mod manager: NetworkManager, items: [$any_type Codable]) $async_mod {
+            for item in items {
+                print(item)
+            }
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("@NetworkActor")));
+    assert!(output.iter().any(|s| s.contains("actor NetworkManager {")));
+    assert!(output.iter().any(|s| s.contains("package func request(url: String) async throws(NetworkError) -> some Response {")));
+    assert!(output.iter().any(|s| s.contains("func processData(isolated manager: NetworkManager, items: [any Codable]) async {")));
+}

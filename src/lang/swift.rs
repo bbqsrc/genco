@@ -141,6 +141,69 @@ impl_lang! {
             out.write_str("@MainActor")
         }
     }
+
+    AsyncModifier(AsyncModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                AsyncModifier::Async => out.write_str("async"),
+                AsyncModifier::Await => out.write_str("await"),
+                AsyncModifier::Throws => out.write_str("throws"),
+            }
+        }
+    }
+
+    IsolationModifier(IsolationModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                IsolationModifier::Nonisolated => out.write_str("nonisolated"),
+                IsolationModifier::Isolated => out.write_str("isolated"),
+            }
+        }
+    }
+
+    ActorType(ActorType) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("actor")
+        }
+    }
+
+    TypeModifier(TypeModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                TypeModifier::Any => out.write_str("any"),
+                TypeModifier::Some => out.write_str("some"),
+            }
+        }
+    }
+
+    TypedThrows(TypedThrows) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("throws(")?;
+            out.write_str(&self.error_type)?;
+            out.write_char(')')
+        }
+    }
+
+    ObservableDecorator(ObservableDecorator) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@Observable")
+        }
+    }
+
+    GlobalActor(GlobalActor) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_char('@')?;
+            out.write_str(&self.name)
+        }
+    }
+
+    AccessModifier(AccessModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                AccessModifier::Package => out.write_str("package"),
+            }
+        }
+    }
 }
 
 /// Format state for Swift code.
@@ -262,7 +325,7 @@ pub struct FreestandingMacro {
 /// Result builders enable DSL-style syntax (e.g., SwiftUI view builders).
 ///
 /// Created through the [result_builder()] function.
-#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ResultBuilder {}
 
 /// MainActor decorator for actor isolation.
@@ -270,8 +333,98 @@ pub struct ResultBuilder {}
 /// Marks types or functions as isolated to the main actor.
 ///
 /// Created through the [main_actor()] function.
-#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct MainActor {}
+
+/// Async modifier for concurrency (Swift 5.5+).
+///
+/// Swift introduced structured concurrency with async/await in Swift 5.5.
+///
+/// Created through helper functions like [async_modifier()], [await_keyword()], or [throws_modifier()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum AsyncModifier {
+    /// `async` - Marks a function as asynchronous
+    Async,
+    /// `await` - Used to call async functions
+    Await,
+    /// `throws` - Marks a function that can throw errors
+    Throws,
+}
+
+/// Isolation modifier for actor isolation (Swift 5.5+).
+///
+/// Controls how declarations interact with actor isolation.
+///
+/// Created through helper functions like [nonisolated_modifier()] or [isolated_modifier()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum IsolationModifier {
+    /// `nonisolated` - Opts out of actor isolation
+    Nonisolated,
+    /// `isolated` - Explicitly isolated to an actor
+    Isolated,
+}
+
+/// Actor type keyword (Swift 5.5+).
+///
+/// Declares an actor type for safe concurrent access.
+///
+/// Created through the [actor_type()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ActorType {}
+
+/// Type modifier for existential and opaque types (Swift 5.6+).
+///
+/// Swift 5.6 introduced `any` for existential types and `some` for opaque types.
+///
+/// Created through helper functions like [any_type()] or [some_type()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum TypeModifier {
+    /// `any` - Existential type (type-erased protocol)
+    Any,
+    /// `some` - Opaque type (concrete type with preserved identity)
+    Some,
+}
+
+/// Typed throws for specific error types (Swift 6.0+).
+///
+/// Swift 6.0 allows specifying the error type a function can throw.
+///
+/// Created through the [typed_throws()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct TypedThrows {
+    /// The error type (e.g., "NetworkError")
+    error_type: ItemStr,
+}
+
+/// Observable decorator (Swift 5.9+).
+///
+/// The @Observable macro simplifies observable object creation.
+///
+/// Created through the [observable()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ObservableDecorator {}
+
+/// Custom global actor decorator (Swift 5.5+).
+///
+/// Custom global actors for actor isolation.
+///
+/// Created through the [global_actor()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct GlobalActor {
+    /// The global actor name (e.g., "UIActor", "DatabaseActor")
+    name: ItemStr,
+}
+
+/// Access control modifier (Swift 5.9+).
+///
+/// Swift 5.9 introduced `package` access control.
+///
+/// Created through helper functions like [package_access()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum AccessModifier {
+    /// `package` - Package-level access control
+    Package,
+}
 
 impl Swift {
     fn imports(out: &mut Tokens, tokens: &Tokens) {
@@ -295,7 +448,15 @@ impl Swift {
                 | AnyKind::AttachedMacro(_)
                 | AnyKind::FreestandingMacro(_)
                 | AnyKind::ResultBuilder(_)
-                | AnyKind::MainActor(_) => {}
+                | AnyKind::MainActor(_)
+                | AnyKind::AsyncModifier(_)
+                | AnyKind::IsolationModifier(_)
+                | AnyKind::ActorType(_)
+                | AnyKind::TypeModifier(_)
+                | AnyKind::TypedThrows(_)
+                | AnyKind::ObservableDecorator(_)
+                | AnyKind::GlobalActor(_)
+                | AnyKind::AccessModifier(_) => {}
             }
         }
 
@@ -654,4 +815,249 @@ pub fn result_builder() -> ResultBuilder {
 /// ```
 pub fn main_actor() -> MainActor {
     MainActor {}
+}
+
+/// Creates an `async` modifier for async functions.
+///
+/// The `async` keyword marks a function as asynchronous in Swift's structured concurrency.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let async_mod = swift::async_modifier();
+/// let toks = quote!(func fetchData() $async_mod -> Data);
+///
+/// assert_eq!("func fetchData() async -> Data", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn async_modifier() -> AsyncModifier {
+    AsyncModifier::Async
+}
+
+/// Creates an `await` keyword for calling async functions.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let await_kw = swift::await_keyword();
+/// let toks = quote!(let data = $await_kw fetchData());
+///
+/// assert_eq!("let data = await fetchData()", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn await_keyword() -> AsyncModifier {
+    AsyncModifier::Await
+}
+
+/// Creates a `throws` modifier for functions that can throw errors.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let throws_mod = swift::throws_modifier();
+/// let toks = quote!(func riskyOperation() $throws_mod -> Result);
+///
+/// assert_eq!("func riskyOperation() throws -> Result", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn throws_modifier() -> AsyncModifier {
+    AsyncModifier::Throws
+}
+
+/// Creates a `nonisolated` modifier for opting out of actor isolation.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let nonisolated_mod = swift::nonisolated_modifier();
+/// let toks = quote!($nonisolated_mod func helper() -> String);
+///
+/// assert_eq!("nonisolated func helper() -> String", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn nonisolated_modifier() -> IsolationModifier {
+    IsolationModifier::Nonisolated
+}
+
+/// Creates an `isolated` modifier for explicit actor isolation.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let isolated_mod = swift::isolated_modifier();
+/// let toks = quote!(func process($isolated_mod actor: MyActor));
+///
+/// assert_eq!("func process(isolated actor: MyActor)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn isolated_modifier() -> IsolationModifier {
+    IsolationModifier::Isolated
+}
+
+/// Creates an `actor` keyword for declaring actor types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let actor_kw = swift::actor_type();
+/// let toks = quote! {
+///     $actor_kw Counter {
+///         var value: Int = 0
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "actor Counter {",
+///         "    var value: Int = 0",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn actor_type() -> ActorType {
+    ActorType {}
+}
+
+/// Creates an `any` type modifier for existential types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let any_type = swift::any_type();
+/// let toks = quote!(let items: [$any_type Collection]);
+///
+/// assert_eq!("let items: [any Collection]", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn any_type() -> TypeModifier {
+    TypeModifier::Any
+}
+
+/// Creates a `some` type modifier for opaque types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let some_type = swift::some_type();
+/// let toks = quote!(var body: $some_type View);
+///
+/// assert_eq!("var body: some View", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn some_type() -> TypeModifier {
+    TypeModifier::Some
+}
+
+/// Creates a typed throws specification.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let typed_throws = swift::typed_throws("NetworkError");
+/// let toks = quote!(func fetch() $typed_throws -> Data);
+///
+/// assert_eq!("func fetch() throws(NetworkError) -> Data", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn typed_throws(error_type: impl Into<ItemStr>) -> TypedThrows {
+    TypedThrows {
+        error_type: error_type.into(),
+    }
+}
+
+/// Creates an `@Observable` decorator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let observable = swift::observable();
+/// let toks = quote! {
+///     $observable
+///     class DataModel {
+///         var name: String = ""
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@Observable",
+///         "class DataModel {",
+///         "    var name: String = \"\"",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn observable() -> ObservableDecorator {
+    ObservableDecorator {}
+}
+
+/// Creates a custom global actor decorator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let ui_actor = swift::global_actor("UIActor");
+/// let toks = quote! {
+///     $ui_actor
+///     class UIManager {
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@UIActor",
+///         "class UIManager {",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn global_actor(name: impl Into<ItemStr>) -> GlobalActor {
+    GlobalActor {
+        name: name.into(),
+    }
+}
+
+/// Creates a `package` access modifier.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let package_mod = swift::package_access();
+/// let toks = quote!($package_mod class InternalUtility {});
+///
+/// assert_eq!("package class InternalUtility {}", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn package_access() -> AccessModifier {
+    AccessModifier::Package
 }

@@ -3,11 +3,33 @@ use genco::prelude::*;
 
 fn main() -> Result<()> {
     let _foundation = swift::import("Foundation", "FileManager");
+
+    // Ownership keywords
     let non_copy = swift::non_copyable();
     let consuming = swift::consuming();
     let borrowing = swift::borrowing();
 
+    // Concurrency features
+    let actor_kw = swift::actor_type();
+    let async_mod = swift::async_modifier();
+    let await_kw = swift::await_keyword();
+    let nonisolated_mod = swift::nonisolated_modifier();
+    let main_actor = swift::main_actor();
+
+    // Type modifiers
+    let some_type = swift::some_type();
+    let any_type = swift::any_type();
+
+    // Modern decorators
+    let observable = swift::observable();
+    let typed_throws = swift::typed_throws("NetworkError");
+    let global_actor = swift::global_actor("DatabaseActor");
+
+    // Access control
+    let package_mod = swift::package_access();
+
     let file_tokens: swift::Tokens = quote! {
+        // Non-copyable file descriptor with ownership keywords
         struct FileDescriptor: $non_copy {
             private let fd: Int32
 
@@ -33,13 +55,35 @@ fn main() -> Result<()> {
             }
         }
 
-        // MainActor-isolated observable object
-        $(swift::main_actor())
+        // Custom global actor for database operations
+        $global_actor
+        $actor_kw DatabaseManager {
+            private var connections: [Connection] = []
+
+            func execute(query: String) $async_mod $typed_throws -> [Row] {
+                let connection = $await_kw getConnection()
+                return $await_kw connection.query(query)
+            }
+
+            $nonisolated_mod func maxConnections() -> Int {
+                return 10
+            }
+        }
+
+        // Observable model with modern Swift features
+        $observable
+        class DataModel {
+            var users: [$any_type Identifiable] = []
+            var selectedUser: User?
+        }
+
+        // MainActor-isolated file manager
+        $main_actor
         class FileManager: ObservableObject {
             $(swift::property_wrapper("Published", None::<&str>)) var openFiles: [String] = []
             private var descriptors: [FileDescriptor] = []
 
-            func openFile(path: String) throws {
+            func openFile(path: String) $async_mod throws {
                 let descriptor = try FileDescriptor(path: path)
                 descriptors.append(descriptor)
                 openFiles.append(path)
@@ -57,19 +101,26 @@ fn main() -> Result<()> {
                 descriptor.close()
             }
         }
-        $(swift::main_actor())
+
+        // SwiftUI view with opaque return type
+        $main_actor
         struct FileViewer: View {
             $(swift::property_wrapper("State", None::<&str>)) private var selectedFile: String = ""
-            $(swift::property_wrapper("Published", None::<&str>)) var files: [String] = []
+            $(swift::property_wrapper("ObservedObject", None::<&str>)) var manager: FileManager
 
-            var body: some View {
-                List(files, id: $$(r"\.self")) { file in
+            var body: $some_type View {
+                List(manager.openFiles, id: $$(r"\.self")) { file in
                     Text(file)
                         .onTapGesture {
                             selectedFile = file
                         }
                 }
             }
+        }
+
+        // Package-level utility function
+        $package_mod func sanitizePath(_ path: String) -> String {
+            return path.replacingOccurrences(of: "..", with: "")
         }
     };
 
