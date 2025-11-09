@@ -751,3 +751,127 @@ fn test_all_new_features_combined() {
     assert!(output.iter().any(|s| s.contains("package func request(url: String) async throws(NetworkError) -> some Response {")));
     assert!(output.iter().any(|s| s.contains("func processData(isolated manager: NetworkManager, items: [any Codable]) async {")));
 }
+
+// ========== Swift 5.x Attributes Tests ==========
+
+#[test]
+fn test_available_attribute() {
+    let available = swift::available("iOS 15, *");
+    let toks: swift::Tokens = quote! {
+        $available
+        func newFeature() {}
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("@available(iOS 15, *)")));
+}
+
+#[test]
+fn test_escaping_closure() {
+    let escaping = swift::escaping();
+    let toks: swift::Tokens = quote!(func execute(completion: $escaping () -> Void));
+
+    assert_eq!("func execute(completion: @escaping () -> Void)", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_autoclosure() {
+    let autoclosure = swift::autoclosure();
+    let toks: swift::Tokens = quote!(func assert(_ condition: $autoclosure () -> Bool));
+
+    assert_eq!("func assert(_ condition: @autoclosure () -> Bool)", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_sendable_attribute() {
+    let sendable = swift::sendable();
+    let toks: swift::Tokens = quote!(let handler: $sendable () -> Void);
+
+    assert_eq!("let handler: @Sendable () -> Void", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_main_attribute() {
+    let main_attr = swift::main_attribute();
+    let toks: swift::Tokens = quote! {
+        $main_attr
+        struct MyApp {
+            static func main() {}
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "@main",
+            "struct MyApp {",
+            "    static func main() {}",
+            "}",
+        ],
+        toks.to_file_vec().unwrap()
+    );
+}
+
+#[test]
+fn test_objc_attribute() {
+    let objc = swift::objc(None::<&str>);
+    let toks: swift::Tokens = quote! {
+        $objc
+        class MyClass: NSObject {}
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("@objc")));
+}
+
+#[test]
+fn test_objc_with_name() {
+    let objc = swift::objc(Some("CustomName"));
+    let toks: swift::Tokens = quote!($objc func myMethod());
+
+    assert_eq!("@objc(CustomName) func myMethod()", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_ib_outlet() {
+    let ib_outlet = swift::ib_outlet();
+    let toks: swift::Tokens = quote!($ib_outlet weak var label: UILabel!);
+
+    assert_eq!("@IBOutlet weak var label: UILabel!", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_ib_action() {
+    let ib_action = swift::ib_action();
+    let toks: swift::Tokens = quote!($ib_action func buttonTapped(_ sender: UIButton));
+
+    assert_eq!("@IBAction func buttonTapped(_ sender: UIButton)", toks.to_string().unwrap());
+}
+
+#[test]
+fn test_ios_uikit_example() {
+    let objc = swift::objc(None::<&str>);
+    let ib_outlet = swift::ib_outlet();
+    let ib_action = swift::ib_action();
+    let available = swift::available("iOS 13, *");
+
+    let toks: swift::Tokens = quote! {
+        $objc
+        class ViewController: UIViewController {
+            $ib_outlet weak var titleLabel: UILabel!
+            $ib_outlet weak var button: UIButton!
+
+            $ib_action func buttonTapped(_ sender: UIButton) {
+                titleLabel.text = "Tapped"
+            }
+
+            $available
+            func newFeature() {}
+        }
+    };
+
+    let output = toks.to_file_vec().unwrap();
+    assert!(output.iter().any(|s| s.contains("@objc")));
+    assert!(output.iter().any(|s| s.contains("@IBOutlet weak var titleLabel: UILabel!")));
+    assert!(output.iter().any(|s| s.contains("@IBAction func buttonTapped(_ sender: UIButton) {")));
+    assert!(output.iter().any(|s| s.contains("@available(iOS 13, *)")));
+}

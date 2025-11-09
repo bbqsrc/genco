@@ -204,6 +204,56 @@ impl_lang! {
             }
         }
     }
+
+    AvailabilityAttribute(AvailabilityAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@available(")?;
+            out.write_str(&self.spec)?;
+            out.write_char(')')
+        }
+    }
+
+    ClosureModifier(ClosureModifier) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                ClosureModifier::Escaping => out.write_str("@escaping"),
+                ClosureModifier::Autoclosure => out.write_str("@autoclosure"),
+            }
+        }
+    }
+
+    SendableAttribute(SendableAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@Sendable")
+        }
+    }
+
+    MainAttribute(MainAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@main")
+        }
+    }
+
+    ObjCAttribute(ObjCAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            out.write_str("@objc")?;
+            if let Some(ref name) = self.name {
+                out.write_char('(')?;
+                out.write_str(name)?;
+                out.write_char(')')?;
+            }
+            Ok(())
+        }
+    }
+
+    IBAttribute(IBAttribute) {
+        fn format(&self, out: &mut fmt::Formatter<'_>, _: &Config, _: &Format) -> fmt::Result {
+            match self {
+                IBAttribute::IBOutlet => out.write_str("@IBOutlet"),
+                IBAttribute::IBAction => out.write_str("@IBAction"),
+            }
+        }
+    }
 }
 
 /// Format state for Swift code.
@@ -426,6 +476,70 @@ pub enum AccessModifier {
     Package,
 }
 
+/// Availability attribute (Swift 2.0+).
+///
+/// Platform and version availability annotations.
+///
+/// Created through the [available()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct AvailabilityAttribute {
+    /// The availability specification (e.g., "iOS 15, *")
+    spec: ItemStr,
+}
+
+/// Closure modifier (Swift 3.0+).
+///
+/// Modifiers for closure parameters.
+///
+/// Created through helper functions like [escaping()] or [autoclosure()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum ClosureModifier {
+    /// `@escaping` - Closure outlives the function call
+    Escaping,
+    /// `@autoclosure` - Automatically wraps expression in closure
+    Autoclosure,
+}
+
+/// Sendable attribute (Swift 5.5+).
+///
+/// Marks closures or function types as sendable across concurrency domains.
+///
+/// Created through the [sendable()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct SendableAttribute {}
+
+/// Main attribute (Swift 5.3+).
+///
+/// Marks a type as the application entry point.
+///
+/// Created through the [main_attribute()] function.
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct MainAttribute {}
+
+/// ObjC attribute (Objective-C interop).
+///
+/// Exposes declarations to the Objective-C runtime.
+///
+/// Created through the [objc()] function.
+#[derive(Debug, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct ObjCAttribute {
+    /// Optional Objective-C name
+    name: Option<ItemStr>,
+}
+
+/// Interface Builder attribute (iOS/macOS).
+///
+/// Marks properties and methods for Interface Builder.
+///
+/// Created through helper functions like [ib_outlet()] or [ib_action()].
+#[derive(Debug, Clone, Copy, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum IBAttribute {
+    /// `@IBOutlet` - Interface Builder outlet
+    IBOutlet,
+    /// `@IBAction` - Interface Builder action
+    IBAction,
+}
+
 impl Swift {
     fn imports(out: &mut Tokens, tokens: &Tokens) {
         use crate as genco;
@@ -456,7 +570,13 @@ impl Swift {
                 | AnyKind::TypedThrows(_)
                 | AnyKind::ObservableDecorator(_)
                 | AnyKind::GlobalActor(_)
-                | AnyKind::AccessModifier(_) => {}
+                | AnyKind::AccessModifier(_)
+                | AnyKind::AvailabilityAttribute(_)
+                | AnyKind::ClosureModifier(_)
+                | AnyKind::SendableAttribute(_)
+                | AnyKind::MainAttribute(_)
+                | AnyKind::ObjCAttribute(_)
+                | AnyKind::IBAttribute(_) => {}
             }
         }
 
@@ -1060,4 +1180,187 @@ pub fn global_actor(name: impl Into<ItemStr>) -> GlobalActor {
 /// ```
 pub fn package_access() -> AccessModifier {
     AccessModifier::Package
+}
+
+/// Creates an `@available` attribute for platform availability.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let available = swift::available("iOS 15, *");
+/// let toks = quote! {
+///     $available
+///     func newFeature() {}
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@available(iOS 15, *)",
+///         "func newFeature() {}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn available(spec: impl Into<ItemStr>) -> AvailabilityAttribute {
+    AvailabilityAttribute {
+        spec: spec.into(),
+    }
+}
+
+/// Creates an `@escaping` modifier for closure parameters.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let escaping = swift::escaping();
+/// let toks = quote!(func execute(completion: $escaping () -> Void));
+///
+/// assert_eq!("func execute(completion: @escaping () -> Void)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn escaping() -> ClosureModifier {
+    ClosureModifier::Escaping
+}
+
+/// Creates an `@autoclosure` modifier for closure parameters.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let autoclosure = swift::autoclosure();
+/// let toks = quote!(func assert(_ condition: $autoclosure () -> Bool));
+///
+/// assert_eq!("func assert(_ condition: @autoclosure () -> Bool)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn autoclosure() -> ClosureModifier {
+    ClosureModifier::Autoclosure
+}
+
+/// Creates a `@Sendable` attribute for closures.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let sendable = swift::sendable();
+/// let toks = quote!(let handler: $sendable () -> Void);
+///
+/// assert_eq!("let handler: @Sendable () -> Void", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn sendable() -> SendableAttribute {
+    SendableAttribute {}
+}
+
+/// Creates a `@main` attribute for application entry points.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let main_attr = swift::main_attribute();
+/// let toks = quote! {
+///     $main_attr
+///     struct MyApp {
+///         static func main() {}
+///     }
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@main",
+///         "struct MyApp {",
+///         "    static func main() {}",
+///         "}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn main_attribute() -> MainAttribute {
+    MainAttribute {}
+}
+
+/// Creates an `@objc` attribute for Objective-C interop.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let objc = swift::objc(None::<&str>);
+/// let toks = quote! {
+///     $objc
+///     class MyClass: NSObject {}
+/// };
+///
+/// assert_eq!(
+///     vec![
+///         "@objc",
+///         "class MyClass: NSObject {}",
+///     ],
+///     toks.to_file_vec()?
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+///
+/// With custom name:
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let objc = swift::objc(Some("CustomName"));
+/// let toks = quote!($objc func myMethod());
+///
+/// assert_eq!("@objc(CustomName) func myMethod()", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn objc(name: Option<impl Into<ItemStr>>) -> ObjCAttribute {
+    ObjCAttribute {
+        name: name.map(|n| n.into()),
+    }
+}
+
+/// Creates an `@IBOutlet` attribute for Interface Builder outlets.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let ib_outlet = swift::ib_outlet();
+/// let toks = quote!($ib_outlet weak var label: UILabel!);
+///
+/// assert_eq!("@IBOutlet weak var label: UILabel!", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn ib_outlet() -> IBAttribute {
+    IBAttribute::IBOutlet
+}
+
+/// Creates an `@IBAction` attribute for Interface Builder actions.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let ib_action = swift::ib_action();
+/// let toks = quote!($ib_action func buttonTapped(_ sender: UIButton));
+///
+/// assert_eq!("@IBAction func buttonTapped(_ sender: UIButton)", toks.to_string()?);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn ib_action() -> IBAttribute {
+    IBAttribute::IBAction
 }
