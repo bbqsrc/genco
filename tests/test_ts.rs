@@ -1748,3 +1748,70 @@ fn test_type_assertion() -> genco::fmt::Result {
     assert_eq!(vec!["someValue as string"], toks.to_file_vec()?);
     Ok(())
 }
+
+#[test]
+fn test_intrinsic_string_types() -> genco::fmt::Result {
+    let upper = ts::type_alias("Upper", ts::uppercase(ts::type_ref("T")));
+    let lower = ts::type_alias("Lower", ts::lowercase(ts::type_ref("T")));
+
+    let toks: ts::Tokens = quote! {
+        $upper
+        $lower
+    };
+
+    assert_eq!(
+        vec![
+            "type Upper = Uppercase<T>;",
+            "type Lower = Lowercase<T>;",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_non_null_assertion() -> genco::fmt::Result {
+    let assertion = ts::non_null_assertion("value");
+
+    let toks: ts::Tokens = quote! {
+        $assertion
+    };
+
+    assert_eq!(vec!["value!"], toks.to_file_vec()?);
+    Ok(())
+}
+
+#[test]
+fn test_type_guard() -> genco::fmt::Result {
+    let guard = ts::type_guard("value", ts::type_ref("string"));
+
+    let toks: ts::Tokens = quote! {
+        $guard
+    };
+
+    assert_eq!(vec!["value is string"], toks.to_file_vec()?);
+    Ok(())
+}
+
+#[test]
+fn test_utility_types() -> genco::fmt::Result {
+    let partial_type = ts::type_alias("PartialUser", ts::partial(ts::type_ref("User")));
+    let pick_type = ts::type_alias(
+        "UserName",
+        ts::pick(ts::type_ref("User"), ts::type_ref("'name'")),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $partial_type
+        $pick_type
+    };
+
+    assert_eq!(
+        vec![
+            "type PartialUser = Partial<User>;",
+            "type UserName = Pick<User, 'name'>;",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}

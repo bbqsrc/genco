@@ -2132,6 +2132,228 @@ where
     TypeAssertion::new(value, type_ref)
 }
 
+/// Intrinsic string manipulation type helper.
+///
+/// Creates TypeScript intrinsic string manipulation types.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let uppercase = ts::uppercase(ts::type_ref("T"));
+/// let lowercase = ts::lowercase(ts::type_ref("T"));
+/// let capitalize = ts::capitalize(ts::type_ref("T"));
+/// let uncapitalize = ts::uncapitalize(ts::type_ref("T"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn uppercase(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Uppercase").with_generics(vec![type_ref])
+}
+
+/// Create Lowercase intrinsic type.
+pub fn lowercase(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Lowercase").with_generics(vec![type_ref])
+}
+
+/// Create Capitalize intrinsic type.
+pub fn capitalize(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Capitalize").with_generics(vec![type_ref])
+}
+
+/// Create Uncapitalize intrinsic type.
+pub fn uncapitalize(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Uncapitalize").with_generics(vec![type_ref])
+}
+
+/// A TypeScript non-null assertion.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let assertion = ts::non_null_assertion("value");
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct NonNullAssertion {
+    value: ItemStr,
+}
+
+impl NonNullAssertion {
+    /// Create a new non-null assertion.
+    pub fn new<V>(value: V) -> Self
+    where
+        V: Into<ItemStr>,
+    {
+        Self {
+            value: value.into(),
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for NonNullAssertion {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.value);
+        tokens.append("!");
+    }
+}
+
+/// Create a TypeScript non-null assertion.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let assertion = ts::non_null_assertion("value");
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn non_null_assertion<V>(value: V) -> NonNullAssertion
+where
+    V: Into<ItemStr>,
+{
+    NonNullAssertion::new(value)
+}
+
+/// A TypeScript type guard (type predicate).
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // param is Type
+/// let guard = ts::type_guard("value", ts::type_ref("string"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct TypeGuard {
+    param: ItemStr,
+    type_ref: TypeRef,
+}
+
+impl TypeGuard {
+    /// Create a new type guard.
+    pub fn new<P>(param: P, type_ref: TypeRef) -> Self
+    where
+        P: Into<ItemStr>,
+    {
+        Self {
+            param: param.into(),
+            type_ref,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for TypeGuard {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.param);
+        tokens.space();
+        tokens.append("is");
+        tokens.space();
+        tokens.append(self.type_ref);
+    }
+}
+
+/// Create a TypeScript type guard (type predicate).
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // param is Type
+/// let guard = ts::type_guard("value", ts::type_ref("string"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn type_guard<P>(param: P, type_ref: TypeRef) -> TypeGuard
+where
+    P: Into<ItemStr>,
+{
+    TypeGuard::new(param, type_ref)
+}
+
+/// Built-in utility types helpers.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let partial = ts::partial(ts::type_ref("User"));
+/// let required = ts::required(ts::type_ref("User"));
+/// let readonly = ts::readonly_util(ts::type_ref("User"));
+/// let pick = ts::pick(ts::type_ref("User"), ts::type_ref("'name' | 'email'"));
+/// let omit = ts::omit(ts::type_ref("User"), ts::type_ref("'password'"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+
+/// Create Partial<T> utility type.
+pub fn partial(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Partial").with_generics(vec![type_ref])
+}
+
+/// Create Required<T> utility type.
+pub fn required(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Required").with_generics(vec![type_ref])
+}
+
+/// Create Readonly<T> utility type.
+pub fn readonly_util(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Readonly").with_generics(vec![type_ref])
+}
+
+/// Create Pick<T, K> utility type.
+pub fn pick(type_ref: TypeRef, keys: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Pick").with_generics(vec![type_ref, keys])
+}
+
+/// Create Omit<T, K> utility type.
+pub fn omit(type_ref: TypeRef, keys: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Omit").with_generics(vec![type_ref, keys])
+}
+
+/// Create Record<K, T> utility type.
+pub fn record(keys: TypeRef, value_type: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Record").with_generics(vec![keys, value_type])
+}
+
+/// Create Exclude<T, U> utility type.
+pub fn exclude(type_ref: TypeRef, excluded: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Exclude").with_generics(vec![type_ref, excluded])
+}
+
+/// Create Extract<T, U> utility type.
+pub fn extract(type_ref: TypeRef, union: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("Extract").with_generics(vec![type_ref, union])
+}
+
+/// Create NonNullable<T> utility type.
+pub fn non_nullable(type_ref: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("NonNullable").with_generics(vec![type_ref])
+}
+
+/// Create ReturnType<T> utility type.
+pub fn return_type(func_type: TypeRef) -> TypeRef {
+    use alloc::vec;
+    TypeRef::new("ReturnType").with_generics(vec![func_type])
+}
+
 /// A TypeScript enum.
 ///
 /// # Examples
