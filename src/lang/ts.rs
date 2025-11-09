@@ -1031,6 +1031,7 @@ pub struct Interface {
     extends_interfaces: Vec<TypeRef>,
     call_signatures: Vec<CallSignature>,
     construct_signatures: Vec<ConstructSignature>,
+    method_signatures: Vec<MethodSignature>,
     properties: Vec<Property>,
     index_signature: Option<IndexSignature>,
 }
@@ -1047,6 +1048,7 @@ impl Interface {
             extends_interfaces: Vec::new(),
             call_signatures: Vec::new(),
             construct_signatures: Vec::new(),
+            method_signatures: Vec::new(),
             properties: Vec::new(),
             index_signature: None,
         }
@@ -1136,6 +1138,28 @@ impl Interface {
         self
     }
 
+    /// Add a method signature to the interface.
+    ///
+    /// Method signatures describe methods in interfaces, separate from properties.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// let api = ts::interface("API")
+    ///     .with_method_signature(ts::method_signature(
+    ///         "fetch",
+    ///         vec![ts::param("url", ts::type_ref("string"))],
+    ///         Some(ts::type_ref("Promise").with_generics(vec![ts::type_ref("Response")]))
+    ///     ));
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_method_signature(mut self, method_signature: MethodSignature) -> Self {
+        self.method_signatures.push(method_signature);
+        self
+    }
+
     /// Add a property to the interface.
     pub fn with_property(mut self, property: Property) -> Self {
         self.properties.push(property);
@@ -1212,6 +1236,12 @@ impl FormatInto<TypeScript> for Interface {
         for construct_sig in self.construct_signatures {
             tokens.push();
             tokens.append(construct_sig);
+        }
+
+        // Then add method signatures
+        for method_sig in self.method_signatures {
+            tokens.push();
+            tokens.append(method_sig);
         }
 
         // Add index signature
@@ -1747,6 +1777,220 @@ where
     F: FormatInto<TypeScript>,
 {
     ConditionalType::new(check_type, extends_type, true_type, false_type)
+}
+
+/// A TypeScript arrow function type.
+///
+/// Arrow function types represent function types using arrow syntax.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // (x: number, y: string) => boolean
+/// let arrow = ts::arrow_function_type(
+///     vec![
+///         ts::param("x", ts::type_ref("number")),
+///         ts::param("y", ts::type_ref("string")),
+///     ],
+///     ts::type_ref("boolean")
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct ArrowFunctionType {
+    params: Vec<FunctionParam>,
+    return_type: TypeRef,
+}
+
+impl ArrowFunctionType {
+    /// Create a new arrow function type.
+    pub fn new(params: Vec<FunctionParam>, return_type: TypeRef) -> Self {
+        Self {
+            params,
+            return_type,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for ArrowFunctionType {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("(");
+
+        for (i, param) in self.params.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append(",");
+                tokens.space();
+            }
+            tokens.append(param);
+        }
+
+        tokens.append(")");
+        tokens.space();
+        tokens.append("=>");
+        tokens.space();
+        tokens.append(self.return_type);
+    }
+}
+
+/// Create a TypeScript arrow function type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // (x: number) => string
+/// let arrow = ts::arrow_function_type(
+///     vec![ts::param("x", ts::type_ref("number"))],
+///     ts::type_ref("string")
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn arrow_function_type(params: Vec<FunctionParam>, return_type: TypeRef) -> ArrowFunctionType {
+    ArrowFunctionType::new(params, return_type)
+}
+
+/// A TypeScript typeof operator.
+///
+/// Represents the `typeof value` type operator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let typeof_val = ts::typeof_operator("myValue");
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct TypeofOperator {
+    value: ItemStr,
+}
+
+impl TypeofOperator {
+    /// Create a new typeof operator.
+    pub fn new<V>(value: V) -> Self
+    where
+        V: Into<ItemStr>,
+    {
+        Self {
+            value: value.into(),
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for TypeofOperator {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("typeof");
+        tokens.space();
+        tokens.append(self.value);
+    }
+}
+
+/// Create a TypeScript typeof operator.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let typeof_val = ts::typeof_operator("myValue");
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn typeof_operator<V>(value: V) -> TypeofOperator
+where
+    V: Into<ItemStr>,
+{
+    TypeofOperator::new(value)
+}
+
+/// A TypeScript method signature for interfaces.
+///
+/// Method signatures describe methods in interfaces.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let method = ts::method_signature(
+///     "getName",
+///     vec![],
+///     Some(ts::type_ref("string"))
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct MethodSignature {
+    name: ItemStr,
+    params: Vec<FunctionParam>,
+    return_type: Option<TypeRef>,
+}
+
+impl MethodSignature {
+    /// Create a new method signature.
+    pub fn new<N>(name: N, params: Vec<FunctionParam>, return_type: Option<TypeRef>) -> Self
+    where
+        N: Into<ItemStr>,
+    {
+        Self {
+            name: name.into(),
+            params,
+            return_type,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for MethodSignature {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.name);
+        tokens.append("(");
+
+        for (i, param) in self.params.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append(",");
+                tokens.space();
+            }
+            tokens.append(param);
+        }
+
+        tokens.append(")");
+
+        if let Some(return_type) = self.return_type {
+            tokens.append(":");
+            tokens.space();
+            tokens.append(return_type);
+        }
+
+        tokens.append(";");
+    }
+}
+
+/// Create a TypeScript method signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let method = ts::method_signature(
+///     "getName",
+///     vec![],
+///     Some(ts::type_ref("string"))
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn method_signature<N>(
+    name: N,
+    params: Vec<FunctionParam>,
+    return_type: Option<TypeRef>,
+) -> MethodSignature
+where
+    N: Into<ItemStr>,
+{
+    MethodSignature::new(name, params, return_type)
 }
 
 /// A TypeScript enum.

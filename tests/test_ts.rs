@@ -1576,3 +1576,144 @@ fn test_conditional_type_nested() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_arrow_function_type_simple() -> genco::fmt::Result {
+    let handler = ts::type_alias(
+        "Handler",
+        ts::arrow_function_type(
+            vec![ts::param("event", ts::type_ref("Event"))],
+            ts::type_ref("void"),
+        ),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $handler
+    };
+
+    assert_eq!(
+        vec!["type Handler = (event: Event) => void;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_arrow_function_type_multiple_params() -> genco::fmt::Result {
+    let comparator = ts::type_alias(
+        "Comparator",
+        ts::arrow_function_type(
+            vec![
+                ts::param("a", ts::type_ref("number")),
+                ts::param("b", ts::type_ref("number")),
+            ],
+            ts::type_ref("boolean"),
+        ),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $comparator
+    };
+
+    assert_eq!(
+        vec!["type Comparator = (a: number, b: number) => boolean;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_typeof_operator() -> genco::fmt::Result {
+    let config_type = ts::type_alias("ConfigType", ts::typeof_operator("defaultConfig"));
+
+    let toks: ts::Tokens = quote! {
+        $config_type
+    };
+
+    assert_eq!(
+        vec!["type ConfigType = typeof defaultConfig;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_method_signature_simple() -> genco::fmt::Result {
+    let api = ts::interface("API")
+        .with_method_signature(ts::method_signature(
+            "fetch",
+            vec![ts::param("url", ts::type_ref("string"))],
+            Some(ts::type_ref("Promise").with_generics(vec![ts::type_ref("Response")])),
+        ));
+
+    let toks: ts::Tokens = quote! {
+        $api
+    };
+
+    assert_eq!(
+        vec![
+            "interface API {",
+            "    fetch(url: string): Promise<Response>;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_method_signature_multiple() -> genco::fmt::Result {
+    let repository = ts::interface("Repository")
+        .with_method_signature(ts::method_signature(
+            "findById",
+            vec![ts::param("id", ts::type_ref("string"))],
+            Some(ts::type_ref("T")),
+        ))
+        .with_method_signature(ts::method_signature(
+            "save",
+            vec![ts::param("entity", ts::type_ref("T"))],
+            Some(ts::type_ref("void")),
+        ))
+        .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $repository
+    };
+
+    assert_eq!(
+        vec![
+            "interface Repository<T> {",
+            "    findById(id: string): T;",
+            "    save(entity: T): void;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_method_signature_with_properties() -> genco::fmt::Result {
+    let mixed = ts::interface("Mixed")
+        .with_method_signature(ts::method_signature(
+            "doSomething",
+            vec![],
+            Some(ts::type_ref("void")),
+        ))
+        .with_property(ts::property("count", ts::type_ref("number")));
+
+    let toks: ts::Tokens = quote! {
+        $mixed
+    };
+
+    assert_eq!(
+        vec![
+            "interface Mixed {",
+            "    doSomething(): void;",
+            "    count: number;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
