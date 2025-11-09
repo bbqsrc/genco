@@ -611,3 +611,239 @@ fn test_module_path_resolution() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_generic_interface_simple() -> genco::fmt::Result {
+    let container = ts::interface("Container")
+        .with_generic_params(vec![ts::generic_param("T")])
+        .with_property(ts::property("value", ts::type_ref("T")));
+
+    let toks: ts::Tokens = quote! {
+        $container
+    };
+
+    assert_eq!(
+        vec![
+            "interface Container<T> {",
+            "    value: T;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_interface_multiple_params() -> genco::fmt::Result {
+    let map = ts::interface("Map")
+        .with_generic_params(vec![ts::generic_param("K"), ts::generic_param("V")])
+        .with_property(ts::property("key", ts::type_ref("K")))
+        .with_property(ts::property("value", ts::type_ref("V")));
+
+    let toks: ts::Tokens = quote! {
+        $map
+    };
+
+    assert_eq!(
+        vec![
+            "interface Map<K, V> {",
+            "    key: K;",
+            "    value: V;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_interface_with_constraint() -> genco::fmt::Result {
+    let constrained = ts::interface("Constrained")
+        .with_generic_params(vec![
+            ts::generic_param("T").with_constraint(ts::type_ref("Base"))
+        ])
+        .with_property(ts::property("item", ts::type_ref("T")));
+
+    let toks: ts::Tokens = quote! {
+        $constrained
+    };
+
+    assert_eq!(
+        vec![
+            "interface Constrained<T extends Base> {",
+            "    item: T;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_interface_with_default() -> genco::fmt::Result {
+    let with_default = ts::interface("WithDefault")
+        .with_generic_params(vec![
+            ts::generic_param("T").with_default(ts::type_ref("string"))
+        ])
+        .with_property(ts::property("value", ts::type_ref("T")));
+
+    let toks: ts::Tokens = quote! {
+        $with_default
+    };
+
+    assert_eq!(
+        vec![
+            "interface WithDefault<T = string> {",
+            "    value: T;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_interface_constraint_and_default() -> genco::fmt::Result {
+    let full = ts::interface("Full")
+        .with_generic_params(vec![
+            ts::generic_param("T")
+                .with_constraint(ts::type_ref("Base"))
+                .with_default(ts::type_ref("DefaultImpl"))
+        ])
+        .with_property(ts::property("item", ts::type_ref("T")));
+
+    let toks: ts::Tokens = quote! {
+        $full
+    };
+
+    assert_eq!(
+        vec![
+            "interface Full<T extends Base = DefaultImpl> {",
+            "    item: T;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_type_alias() -> genco::fmt::Result {
+    let nullable = ts::type_alias(
+        "Nullable",
+        ts::union_type(vec![ts::type_ref("T"), ts::type_ref("null")]),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $nullable
+    };
+
+    assert_eq!(
+        vec!["type Nullable<T> = T | null;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_type_alias_with_constraint() -> genco::fmt::Result {
+    let constrained_result = ts::type_alias(
+        "Result",
+        ts::union_type(vec![
+            ts::type_ref("Success").with_generics(vec![ts::type_ref("T")]),
+            ts::type_ref("Error"),
+        ]),
+    )
+    .with_generic_params(vec![
+        ts::generic_param("T").with_constraint(ts::type_ref("Serializable"))
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        $constrained_result
+    };
+
+    assert_eq!(
+        vec!["type Result<T extends Serializable> = Success<T> | Error;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_type_alias_with_default() -> genco::fmt::Result {
+    let optional = ts::type_alias(
+        "Optional",
+        ts::union_type(vec![ts::type_ref("T"), ts::type_ref("undefined")]),
+    )
+    .with_generic_params(vec![
+        ts::generic_param("T").with_default(ts::type_ref("any"))
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        $optional
+    };
+
+    assert_eq!(
+        vec!["type Optional<T = any> = T | undefined;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_generic_type_alias_multiple_params() -> genco::fmt::Result {
+    let key_value = ts::type_alias(
+        "KeyValue",
+        ts::tuple_type(vec![ts::type_ref("K"), ts::type_ref("V")]),
+    )
+    .with_generic_params(vec![ts::generic_param("K"), ts::generic_param("V")]);
+
+    let toks: ts::Tokens = quote! {
+        $key_value
+    };
+
+    assert_eq!(
+        vec!["type KeyValue<K, V> = [K, V];"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_complex_generics() -> genco::fmt::Result {
+    // Interface with multiple generic params
+    let response = ts::interface("Response")
+        .with_generic_params(vec![
+            ts::generic_param("T"),
+            ts::generic_param("E").with_default(ts::type_ref("Error")),
+        ])
+        .with_property(ts::optional_property("data", ts::type_ref("T")))
+        .with_property(ts::optional_property("error", ts::type_ref("E")));
+
+    // Type alias using the generic interface
+    let api_response = ts::type_alias(
+        "ApiResponse",
+        ts::type_ref("Response").with_generics(vec![ts::type_ref("T")]),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $response
+
+        $api_response
+    };
+
+    assert_eq!(
+        vec![
+            "interface Response<T, E = Error> {",
+            "    data?: T;",
+            "    error?: E;",
+            "}",
+            "",
+            "type ApiResponse<T> = Response<T>;",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}

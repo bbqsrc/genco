@@ -723,6 +723,103 @@ where
     TypeRef::new(name)
 }
 
+/// A generic type parameter for TypeScript interfaces and type aliases.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // Simple generic parameter
+/// let t = ts::generic_param("T");
+///
+/// // With constraint
+/// let constrained = ts::generic_param("T").with_constraint(ts::type_ref("Base"));
+///
+/// // With default
+/// let with_default = ts::generic_param("T").with_default(ts::type_ref("string"));
+///
+/// // With both
+/// let full = ts::generic_param("T")
+///     .with_constraint(ts::type_ref("Base"))
+///     .with_default(ts::type_ref("DefaultImpl"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct GenericParam {
+    name: ItemStr,
+    constraint: Option<TypeRef>,
+    default: Option<TypeRef>,
+}
+
+impl GenericParam {
+    /// Create a new generic parameter.
+    pub fn new<N>(name: N) -> Self
+    where
+        N: Into<ItemStr>,
+    {
+        Self {
+            name: name.into(),
+            constraint: None,
+            default: None,
+        }
+    }
+
+    /// Add a constraint to this generic parameter (e.g., `T extends Base`).
+    pub fn with_constraint(self, constraint: TypeRef) -> Self {
+        Self {
+            constraint: Some(constraint),
+            ..self
+        }
+    }
+
+    /// Add a default type to this generic parameter (e.g., `T = string`).
+    pub fn with_default(self, default: TypeRef) -> Self {
+        Self {
+            default: Some(default),
+            ..self
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for GenericParam {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.name);
+
+        if let Some(constraint) = self.constraint {
+            tokens.space();
+            tokens.append("extends");
+            tokens.space();
+            tokens.append(constraint);
+        }
+
+        if let Some(default) = self.default {
+            tokens.space();
+            tokens.append("=");
+            tokens.space();
+            tokens.append(default);
+        }
+    }
+}
+
+/// Create a generic type parameter.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let t = ts::generic_param("T");
+/// let constrained = ts::generic_param("T").with_constraint(ts::type_ref("Base"));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn generic_param<N>(name: N) -> GenericParam
+where
+    N: Into<ItemStr>,
+{
+    GenericParam::new(name)
+}
+
 /// A TypeScript interface definition.
 ///
 /// # Examples
@@ -735,14 +832,21 @@ where
 ///     .with_property(ts::property("name", ts::type_ref("string")))
 ///     .with_property(ts::optional_property("email", ts::type_ref("string")));
 ///
+/// // Generic interface
+/// let container = ts::interface("Container")
+///     .with_generic_params(vec![ts::generic_param("T")])
+///     .with_property(ts::property("value", ts::type_ref("T")));
+///
 /// let toks: ts::Tokens = quote! {
 ///     $user_interface
+///     $container
 /// };
 /// # Ok::<_, genco::fmt::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct Interface {
     name: ItemStr,
+    generic_params: Vec<GenericParam>,
     properties: Vec<Property>,
 }
 
@@ -754,8 +858,26 @@ impl Interface {
     {
         Self {
             name: name.into(),
+            generic_params: Vec::new(),
             properties: Vec::new(),
         }
+    }
+
+    /// Add generic type parameters to the interface.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// let container = ts::interface("Container")
+    ///     .with_generic_params(vec![ts::generic_param("T")])
+    ///     .with_property(ts::property("value", ts::type_ref("T")));
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_generic_params(mut self, generic_params: Vec<GenericParam>) -> Self {
+        self.generic_params = generic_params;
+        self
     }
 
     /// Add a property to the interface.
@@ -775,6 +897,19 @@ impl FormatInto<TypeScript> for Interface {
         quote_in! { *tokens =>
             interface $name
         };
+
+        // Add generic parameters if present
+        if !self.generic_params.is_empty() {
+            tokens.append("<");
+            for (i, param) in self.generic_params.into_iter().enumerate() {
+                if i > 0 {
+                    tokens.append(",");
+                    tokens.space();
+                }
+                tokens.append(param);
+            }
+            tokens.append(">");
+        }
 
         tokens.space();
         tokens.append("{");
@@ -910,27 +1045,59 @@ where
 ///
 /// let user_id = ts::type_alias("UserID", ts::type_ref("string"));
 ///
+/// // Generic type alias
+/// let result = ts::type_alias("Result", ts::union_type(vec![
+///     ts::type_ref("Success").with_generics(vec![ts::type_ref("T")]),
+///     ts::type_ref("Error"),
+/// ]))
+/// .with_generic_params(vec![ts::generic_param("T")]);
+///
 /// let toks: ts::Tokens = quote! {
 ///     $user_id
+///     $result
 /// };
 /// # Ok::<_, genco::fmt::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct TypeAlias {
     name: ItemStr,
-    type_ref: TypeRef,
+    generic_params: Vec<GenericParam>,
+    type_expr: Tokens,
 }
 
 impl TypeAlias {
     /// Create a new type alias.
-    pub fn new<N>(name: N, type_ref: TypeRef) -> Self
+    pub fn new<N, T>(name: N, type_expr: T) -> Self
     where
         N: Into<ItemStr>,
+        T: FormatInto<TypeScript>,
     {
+        let mut tokens = Tokens::new();
+        tokens.append(type_expr);
         Self {
             name: name.into(),
-            type_ref,
+            generic_params: Vec::new(),
+            type_expr: tokens,
         }
+    }
+
+    /// Add generic type parameters to the type alias.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// let nullable = ts::type_alias("Nullable", ts::union_type(vec![
+    ///     ts::type_ref("T"),
+    ///     ts::type_ref("null"),
+    /// ]))
+    /// .with_generic_params(vec![ts::generic_param("T")]);
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_generic_params(mut self, generic_params: Vec<GenericParam>) -> Self {
+        self.generic_params = generic_params;
+        self
     }
 }
 
@@ -939,10 +1106,24 @@ impl FormatInto<TypeScript> for TypeAlias {
         tokens.append("type");
         tokens.space();
         tokens.append(self.name);
+
+        // Add generic parameters if present
+        if !self.generic_params.is_empty() {
+            tokens.append("<");
+            for (i, param) in self.generic_params.into_iter().enumerate() {
+                if i > 0 {
+                    tokens.append(",");
+                    tokens.space();
+                }
+                tokens.append(param);
+            }
+            tokens.append(">");
+        }
+
         tokens.space();
         tokens.append("=");
         tokens.space();
-        tokens.append(self.type_ref);
+        tokens.append(self.type_expr);
         tokens.append(";");
     }
 }
@@ -956,13 +1137,21 @@ impl FormatInto<TypeScript> for TypeAlias {
 ///
 /// let user_id = ts::type_alias("UserID", ts::type_ref("string"));
 /// let count = ts::type_alias("Count", ts::type_ref("number"));
+///
+/// // Can also use union types, tuple types, etc.
+/// let nullable = ts::type_alias("Nullable", ts::union_type(vec![
+///     ts::type_ref("T"),
+///     ts::type_ref("null"),
+/// ]))
+/// .with_generic_params(vec![ts::generic_param("T")]);
 /// # Ok::<_, genco::fmt::Error>(())
 /// ```
-pub fn type_alias<N>(name: N, type_ref: TypeRef) -> TypeAlias
+pub fn type_alias<N, T>(name: N, type_expr: T) -> TypeAlias
 where
     N: Into<ItemStr>,
+    T: FormatInto<TypeScript>,
 {
-    TypeAlias::new(name, type_ref)
+    TypeAlias::new(name, type_expr)
 }
 
 /// A TypeScript enum.
