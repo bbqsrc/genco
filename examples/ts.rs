@@ -23,17 +23,25 @@ fn main() -> anyhow::Result<()> {
 
     // Define type aliases
     let user_id_type = ts::type_alias("UserID", ts::type_ref("number"));
-    let callback_type = ts::type_alias(
-        "LoadCallback",
-        ts::type_ref("Function"), // In real usage, you'd define proper function signature
-    );
 
-    // Define an enum
-    let status_enum = ts::enum_type("LoadStatus")
-        .with_variant("Idle", Some(quote!("idle")))
-        .with_variant("Loading", Some(quote!("loading")))
-        .with_variant("Success", Some(quote!("success")))
-        .with_variant("Error", Some(quote!("error")));
+    // Create union types (will be used inline in quote!{})
+    let status_union = ts::union_type(vec![
+        ts::literal("idle").into(),
+        ts::literal("loading").into(),
+        ts::literal("success").into(),
+        ts::literal("error").into(),
+    ]);
+
+    let result_union = ts::union_type(vec![
+        ts::type_ref("Success").with_generics(vec![ts::type_ref("T")]),
+        ts::type_ref("Error"),
+    ]);
+
+    // Define an enum for action types
+    let action_enum = ts::enum_type("ActionType")
+        .with_variant("LOAD_START", Some(quote!("LOAD_START")))
+        .with_variant("LOAD_SUCCESS", Some(quote!("LOAD_SUCCESS")))
+        .with_variant("LOAD_ERROR", Some(quote!("LOAD_ERROR")));
 
     // Generate the TypeScript code
     let tokens = quote! {
@@ -43,9 +51,11 @@ fn main() -> anyhow::Result<()> {
 
         $(user_id_type)
 
-        $(callback_type)
+        type LoadStatus = $status_union;
 
-        $(status_enum)
+        type Result<T> = $result_union;
+
+        $(action_enum)
 
         export default class App extends $react.Component<AppProps, AppState> {
             state: AppState = {

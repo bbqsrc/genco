@@ -342,6 +342,242 @@ fn test_complex_example() -> genco::fmt::Result {
 }
 
 #[test]
+fn test_union_type() -> genco::fmt::Result {
+    let string_or_number = ts::union_type(vec![
+        ts::type_ref("string"),
+        ts::type_ref("number"),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        type StringOrNumber = $string_or_number;
+    };
+
+    assert_eq!(
+        vec!["type StringOrNumber = string | number;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_union_type_with_literals() -> genco::fmt::Result {
+    let status = ts::union_type(vec![
+        ts::literal("idle").into(),
+        ts::literal("loading").into(),
+        ts::literal("success").into(),
+        ts::literal("error").into(),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        type Status = $status;
+    };
+
+    assert_eq!(
+        vec!["type Status = \"idle\" | \"loading\" | \"success\" | \"error\";"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_intersection_type() -> genco::fmt::Result {
+    let employee = ts::intersection_type(vec![
+        ts::type_ref("Person"),
+        ts::type_ref("Worker"),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        type Employee = $employee;
+    };
+
+    assert_eq!(
+        vec!["type Employee = Person & Worker;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_literal_types() -> genco::fmt::Result {
+    let string_lit = ts::literal("success");
+    let number_lit = ts::literal_number(42);
+    let float_lit = ts::literal_float(3.14);
+    let bigint_lit = ts::literal_bigint(9007199254740992);
+    let bool_lit = ts::literal_bool(true);
+
+    let toks: ts::Tokens = quote! {
+        type A = $string_lit;
+        type B = $number_lit;
+        type C = $float_lit;
+        type D = $bigint_lit;
+        type E = $bool_lit;
+    };
+
+    assert_eq!(
+        vec![
+            "type A = \"success\";",
+            "type B = 42;",
+            "type C = 3.14;",
+            "type D = 9007199254740992n;",
+            "type E = true;",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_tuple_type() -> genco::fmt::Result {
+    let pair = ts::tuple_type(vec![
+        ts::type_ref("string"),
+        ts::type_ref("number"),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        type Pair = $pair;
+    };
+
+    assert_eq!(
+        vec!["type Pair = [string, number];"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_function_signature() -> genco::fmt::Result {
+    let greet = ts::function_signature(
+        "greet",
+        vec![ts::param("name", ts::type_ref("string"))],
+        Some(ts::type_ref("string")),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $greet {
+            return "Hello, " + name;
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "function greet(name: string): string {",
+            "    return \"Hello, \" + name;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_function_signature_multiple_params() -> genco::fmt::Result {
+    let add = ts::function_signature(
+        "add",
+        vec![
+            ts::param("a", ts::type_ref("number")),
+            ts::param("b", ts::type_ref("number")),
+        ],
+        Some(ts::type_ref("number")),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $add {
+            return a + b;
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "function add(a: number, b: number): number {",
+            "    return a + b;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_function_signature_optional_params() -> genco::fmt::Result {
+    let greet = ts::function_signature(
+        "greet",
+        vec![
+            ts::param("name", ts::type_ref("string")),
+            ts::param("age", ts::type_ref("number")).optional(),
+        ],
+        Some(ts::type_ref("string")),
+    );
+
+    let toks: ts::Tokens = quote! {
+        $greet {
+            return name;
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "function greet(name: string, age?: number): string {",
+            "    return name;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_function_signature_no_return() -> genco::fmt::Result {
+    let log = ts::function_signature(
+        "log",
+        vec![ts::param("message", ts::type_ref("string"))],
+        None,
+    );
+
+    let toks: ts::Tokens = quote! {
+        $log {
+            console.log(message);
+        }
+    };
+
+    assert_eq!(
+        vec![
+            "function log(message: string) {",
+            "    console.log(message);",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_complex_types_combination() -> genco::fmt::Result {
+    let result_type = ts::union_type(vec![
+        ts::type_ref("Success").with_generics(vec![ts::type_ref("T")]),
+        ts::type_ref("Error"),
+    ]);
+
+    let handler_params = ts::tuple_type(vec![
+        ts::type_ref("string"),
+        ts::type_ref("number"),
+    ]);
+
+    let toks: ts::Tokens = quote! {
+        type Result<T> = $result_type;
+        type Handler = $handler_params;
+    };
+
+    assert_eq!(
+        vec![
+            "type Result<T> = Success<T> | Error;",
+            "type Handler = [string, number];",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
 fn test_module_path_resolution() -> genco::fmt::Result {
     use genco::fmt;
 

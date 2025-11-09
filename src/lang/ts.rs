@@ -47,7 +47,8 @@
 use core::fmt::Write as _;
 
 use alloc::collections::{BTreeMap, BTreeSet};
-use alloc::string::String;
+use alloc::format;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use crate::fmt;
@@ -1070,4 +1071,474 @@ where
     N: Into<ItemStr>,
 {
     Enum::new(name)
+}
+
+/// A TypeScript union type (e.g., `string | number`).
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let status = ts::union_type(vec![
+///     ts::literal("idle").into(),
+///     ts::literal("loading").into(),
+///     ts::literal("success").into(),
+/// ]);
+///
+/// let toks: ts::Tokens = quote! {
+///     type Status = $status;
+/// };
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct UnionType {
+    types: Vec<TypeRef>,
+}
+
+impl UnionType {
+    /// Create a new union type.
+    pub fn new(types: Vec<TypeRef>) -> Self {
+        Self { types }
+    }
+}
+
+impl FormatInto<TypeScript> for UnionType {
+    fn format_into(self, tokens: &mut Tokens) {
+        for (i, type_ref) in self.types.into_iter().enumerate() {
+            if i > 0 {
+                tokens.space();
+                tokens.append("|");
+                tokens.space();
+            }
+            tokens.append(type_ref);
+        }
+    }
+}
+
+/// Create a TypeScript union type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let string_or_number = ts::union_type(vec![
+///     ts::type_ref("string"),
+///     ts::type_ref("number"),
+/// ]);
+///
+/// let toks: ts::Tokens = quote! {
+///     let value: $string_or_number;
+/// };
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn union_type(types: Vec<TypeRef>) -> UnionType {
+    UnionType::new(types)
+}
+
+/// A TypeScript intersection type (e.g., `Type1 & Type2`).
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let combined = ts::intersection_type(vec![
+///     ts::type_ref("Person"),
+///     ts::type_ref("Worker"),
+/// ]);
+///
+/// let toks: ts::Tokens = quote! {
+///     type Employee = $combined;
+/// };
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct IntersectionType {
+    types: Vec<TypeRef>,
+}
+
+impl IntersectionType {
+    /// Create a new intersection type.
+    pub fn new(types: Vec<TypeRef>) -> Self {
+        Self { types }
+    }
+}
+
+impl FormatInto<TypeScript> for IntersectionType {
+    fn format_into(self, tokens: &mut Tokens) {
+        for (i, type_ref) in self.types.into_iter().enumerate() {
+            if i > 0 {
+                tokens.space();
+                tokens.append("&");
+                tokens.space();
+            }
+            tokens.append(type_ref);
+        }
+    }
+}
+
+/// Create a TypeScript intersection type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let employee = ts::intersection_type(vec![
+///     ts::type_ref("Person"),
+///     ts::type_ref("Worker"),
+/// ]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn intersection_type(types: Vec<TypeRef>) -> IntersectionType {
+    IntersectionType::new(types)
+}
+
+/// A TypeScript literal type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let idle = ts::literal("idle");
+/// let count = ts::literal_number(42);
+/// let pi = ts::literal_float(3.14);
+/// let big = ts::literal_bigint(9007199254740991);
+/// let flag = ts::literal_bool(true);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub enum LiteralType {
+    /// A string literal type.
+    String(ItemStr),
+    /// An integer literal type.
+    Number(i64),
+    /// A floating point literal type.
+    Float(f64),
+    /// A BigInt literal type (e.g., `42n`).
+    BigInt(i64),
+    /// A boolean literal type.
+    Boolean(bool),
+}
+
+impl FormatInto<TypeScript> for LiteralType {
+    fn format_into(self, tokens: &mut Tokens) {
+        match self {
+            LiteralType::String(s) => {
+                tokens.append("\"");
+                tokens.append(s);
+                tokens.append("\"");
+            }
+            LiteralType::Number(n) => {
+                tokens.append(n.to_string());
+            }
+            LiteralType::Float(f) => {
+                tokens.append(f.to_string());
+            }
+            LiteralType::BigInt(n) => {
+                tokens.append(n.to_string());
+                tokens.append("n");
+            }
+            LiteralType::Boolean(b) => {
+                tokens.append(if b { "true" } else { "false" });
+            }
+        }
+    }
+}
+
+impl From<LiteralType> for TypeRef {
+    fn from(lit: LiteralType) -> Self {
+        // Create a wrapper that formats the literal inline
+        match lit {
+            LiteralType::String(s) => TypeRef::new(format!("\"{}\"", s)),
+            LiteralType::Number(n) => TypeRef::new(n.to_string()),
+            LiteralType::Float(f) => TypeRef::new(f.to_string()),
+            LiteralType::BigInt(n) => TypeRef::new(format!("{}n", n)),
+            LiteralType::Boolean(b) => TypeRef::new(if b { "true" } else { "false" }),
+        }
+    }
+}
+
+/// Create a TypeScript string literal type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let status = ts::union_type(vec![
+///     ts::literal("idle").into(),
+///     ts::literal("loading").into(),
+///     ts::literal("success").into(),
+/// ]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn literal<S>(value: S) -> LiteralType
+where
+    S: Into<ItemStr>,
+{
+    LiteralType::String(value.into())
+}
+
+/// Create a TypeScript integer literal type.
+pub fn literal_number(value: i64) -> LiteralType {
+    LiteralType::Number(value)
+}
+
+/// Create a TypeScript floating point literal type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let pi = ts::literal_float(3.14159);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn literal_float(value: f64) -> LiteralType {
+    LiteralType::Float(value)
+}
+
+/// Create a TypeScript BigInt literal type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let big_number = ts::literal_bigint(9007199254740992);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn literal_bigint(value: i64) -> LiteralType {
+    LiteralType::BigInt(value)
+}
+
+/// Create a TypeScript boolean literal type.
+pub fn literal_bool(value: bool) -> LiteralType {
+    LiteralType::Boolean(value)
+}
+
+/// A TypeScript tuple type (e.g., `[string, number]`).
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let pair = ts::tuple_type(vec![
+///     ts::type_ref("string"),
+///     ts::type_ref("number"),
+/// ]);
+///
+/// let toks: ts::Tokens = quote! {
+///     type Pair = $pair;
+/// };
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct TupleType {
+    elements: Vec<TypeRef>,
+}
+
+impl TupleType {
+    /// Create a new tuple type.
+    pub fn new(elements: Vec<TypeRef>) -> Self {
+        Self { elements }
+    }
+}
+
+impl FormatInto<TypeScript> for TupleType {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("[");
+        for (i, element) in self.elements.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append(",");
+                tokens.space();
+            }
+            tokens.append(element);
+        }
+        tokens.append("]");
+    }
+}
+
+/// Create a TypeScript tuple type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let coordinates = ts::tuple_type(vec![
+///     ts::type_ref("number"),
+///     ts::type_ref("number"),
+/// ]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn tuple_type(elements: Vec<TypeRef>) -> TupleType {
+    TupleType::new(elements)
+}
+
+/// A TypeScript function parameter.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let name_param = ts::param("name", ts::type_ref("string"));
+/// let age_param = ts::param("age", ts::type_ref("number")).optional();
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct FunctionParam {
+    name: ItemStr,
+    type_ref: TypeRef,
+    optional: bool,
+}
+
+impl FunctionParam {
+    /// Create a new function parameter.
+    pub fn new<N>(name: N, type_ref: TypeRef) -> Self
+    where
+        N: Into<ItemStr>,
+    {
+        Self {
+            name: name.into(),
+            type_ref,
+            optional: false,
+        }
+    }
+
+    /// Mark this parameter as optional.
+    pub fn optional(mut self) -> Self {
+        self.optional = true;
+        self
+    }
+}
+
+impl FormatInto<TypeScript> for FunctionParam {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.name);
+        if self.optional {
+            tokens.append("?");
+        }
+        tokens.append(":");
+        tokens.space();
+        tokens.append(self.type_ref);
+    }
+}
+
+/// Create a TypeScript function parameter.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let param = ts::param("name", ts::type_ref("string"));
+/// let optional_param = ts::param("age", ts::type_ref("number")).optional();
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn param<N>(name: N, type_ref: TypeRef) -> FunctionParam
+where
+    N: Into<ItemStr>,
+{
+    FunctionParam::new(name, type_ref)
+}
+
+/// A TypeScript function signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let greet = ts::function_signature(
+///     "greet",
+///     vec![ts::param("name", ts::type_ref("string"))],
+///     Some(ts::type_ref("string")),
+/// );
+///
+/// let toks: ts::Tokens = quote! {
+///     $greet {
+///         return "Hello, " + name;
+///     }
+/// };
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct FunctionSignature {
+    name: ItemStr,
+    params: Vec<FunctionParam>,
+    return_type: Option<TypeRef>,
+}
+
+impl FunctionSignature {
+    /// Create a new function signature.
+    pub fn new<N>(name: N, params: Vec<FunctionParam>, return_type: Option<TypeRef>) -> Self
+    where
+        N: Into<ItemStr>,
+    {
+        Self {
+            name: name.into(),
+            params,
+            return_type,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for FunctionSignature {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("function");
+        tokens.space();
+        tokens.append(self.name);
+        tokens.append("(");
+
+        for (i, param) in self.params.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append(",");
+                tokens.space();
+            }
+            tokens.append(param);
+        }
+
+        tokens.append(")");
+
+        if let Some(return_type) = self.return_type {
+            tokens.append(":");
+            tokens.space();
+            tokens.append(return_type);
+        }
+    }
+}
+
+/// Create a TypeScript function signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let add = ts::function_signature(
+///     "add",
+///     vec![
+///         ts::param("a", ts::type_ref("number")),
+///         ts::param("b", ts::type_ref("number")),
+///     ],
+///     Some(ts::type_ref("number")),
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn function_signature<N>(
+    name: N,
+    params: Vec<FunctionParam>,
+    return_type: Option<TypeRef>,
+) -> FunctionSignature
+where
+    N: Into<ItemStr>,
+{
+    FunctionSignature::new(name, params, return_type)
 }
