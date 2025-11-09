@@ -88,6 +88,12 @@ GenericParam::with_constraint(type_ref) -> GenericParam
 GenericParam::with_default(type_ref) -> GenericParam
 Interface::with_generic_params(vec![GenericParam]) -> Interface
 TypeAlias::with_generic_params(vec![GenericParam]) -> TypeAlias
+
+// Index signatures
+ts::index_signature_string(key_name, value_type) -> IndexSignature
+ts::index_signature_number(key_name, value_type) -> IndexSignature
+ts::index_signature_symbol(key_name, value_type) -> IndexSignature
+Interface::with_index_signature(IndexSignature) -> Interface
 ```
 
 ### Configuration
@@ -102,7 +108,7 @@ The following TypeScript features are **not currently supported** and would requ
 ### Advanced Type System
 - ❌ **Mapped Types**: `{ [P in keyof T]: T[P] }`
 - ❌ **Conditional Types**: `T extends U ? X : Y`
-- ❌ **Index Signatures**: `[key: string]: any`
+- ✅ **Index Signatures**: `[key: string]: any`, `[index: number]: T`, `[key: symbol]: value`
 - ❌ **Arrow Function Types**: `(x: number) => string`
 - ❌ **Constructor Types**: `new () => T`
 
@@ -129,7 +135,7 @@ The following TypeScript features are **not currently supported** and would requ
 
 ### Interface Features
 - ❌ **Extends Clause**: `interface Foo extends Bar {}`
-- ❌ **Index Signatures**: `[key: string]: any`
+- ✅ **Index Signatures**: `[key: string]: any`, `[index: number]: T`, `[key: symbol]: value`
 - ❌ **Call Signatures**: `(x: number): string`
 - ❌ **Construct Signatures**: `new (x: number): Foo`
 - ❌ **Method Signatures**: Separate from properties
@@ -213,7 +219,7 @@ let tokens: ts::Tokens = quote! {
 |----------|-------------|-----------------|----------|
 | Import System | 8 | 5 | 61% |
 | Basic Types | 10 | 3 | 77% |
-| Interfaces | 6 | 4 | 60% |
+| Interfaces | 7 | 3 | 70% |
 | Type Aliases | 2 | 0 | 100% |
 | Enums | 2 | 0 | 100% |
 | Union/Intersection | 2 | 0 | 100% |
@@ -221,8 +227,8 @@ let tokens: ts::Tokens = quote! {
 | Tuple Types | 1 | 0 | 100% |
 | Function Signatures | 3 | 1 | 75% |
 | Generics | 4 | 1 | 80% |
-| Advanced Features | 3 | 10 | 23% |
-| **Overall** | **46** | **24** | **66%** |
+| Advanced Features | 4 | 9 | 31% |
+| **Overall** | **48** | **22** | **69%** |
 
 ## 🎯 Recommended Usage
 
@@ -272,11 +278,12 @@ Run the example:
 cargo run --example ts
 ```
 
-See `tests/test_ts.rs` for 38 comprehensive test cases covering all implemented features, including:
+See `tests/test_ts.rs` for 43 comprehensive test cases covering all implemented features, including:
 - Basic quoting and imports (8 tests)
 - Type references and interfaces (4 tests)
 - Type aliases and enums (3 tests)
 - Union, intersection, literal, and tuple types (6 tests)
 - Function signatures (4 tests)
 - Generic interfaces and type aliases (11 tests)
+- Index signatures (5 tests)
 - Module path resolution (2 tests)

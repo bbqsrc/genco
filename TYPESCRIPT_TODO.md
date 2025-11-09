@@ -35,6 +35,12 @@ This document tracks TypeScript features that are not yet implemented in genco.
 
 ## Priority 3: Advanced Type Features
 
+### Index Signatures ✅ COMPLETE
+- [x] Add index signatures to interfaces: `Interface::with_index_signature(IndexSignature)`
+- [x] Support string index signatures: `ts::index_signature_string(key, value_type)`
+- [x] Support number index signatures: `ts::index_signature_number(key, value_type)`
+- [x] Support symbol index signatures: `ts::index_signature_symbol(key, value_type)`
+
 ### Mapped Types
 - [ ] Implement mapped type builder: `ts::mapped_type(key_type, value_type)`
 - [ ] Support `keyof` operator
@@ -45,12 +51,6 @@ This document tracks TypeScript features that are not yet implemented in genco.
 - [ ] Implement conditional type: `ts::conditional_type(check, extends, true_type, false_type)`
 - [ ] Support `infer` keyword in conditional types
 - [ ] Support distributive conditional types
-
-### Index Signatures
-- [ ] Add index signatures to interfaces: `Interface::with_index_signature(key_type, value_type)`
-- [ ] Support string index signatures
-- [ ] Support number index signatures
-- [ ] Support symbol index signatures
 
 ### Template Literal Types
 - [ ] Implement template literal type builder
