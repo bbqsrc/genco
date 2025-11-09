@@ -109,6 +109,9 @@ MappedType::optional() -> MappedType
 MappedType::required() -> MappedType
 ts::keyof(type_ref) -> KeyofOperator
 TypeRef::indexed_by(index) -> TypeRef  // For T[K] indexed access
+
+// Conditional types
+ts::conditional_type(check_type, extends_type, true_type, false_type) -> ConditionalType
 ```
 
 ### Configuration
@@ -125,7 +128,7 @@ The following TypeScript features are **not currently supported** and would requ
 - ✅ **Keyof Operator**: `keyof T`
 - ✅ **Indexed Access Types**: `T[K]`
 - ✅ **Index Signatures**: `[key: string]: any`, `[index: number]: T`, `[key: symbol]: value`
-- ❌ **Conditional Types**: `T extends U ? X : Y`
+- ✅ **Conditional Types**: `T extends U ? X : Y`
 - ❌ **Arrow Function Types**: `(x: number) => string`
 - ❌ **Constructor Types**: `new () => T`
 
@@ -244,8 +247,8 @@ let tokens: ts::Tokens = quote! {
 | Tuple Types | 1 | 0 | 100% |
 | Function Signatures | 3 | 1 | 75% |
 | Generics | 4 | 1 | 80% |
-| Advanced Features | 7 | 6 | 54% |
-| **Overall** | **54** | **16** | **77%** |
+| Advanced Features | 8 | 5 | 62% |
+| **Overall** | **55** | **15** | **79%** |
 
 ## 🎯 Recommended Usage
 
@@ -295,7 +298,7 @@ Run the example:
 cargo run --example ts
 ```
 
-See `tests/test_ts.rs` for 63 comprehensive test cases covering all implemented features, including:
+See `tests/test_ts.rs` for 69 comprehensive test cases covering all implemented features, including:
 - Basic quoting and imports (8 tests)
 - Type references and interfaces (4 tests)
 - Type aliases and enums (3 tests)
@@ -306,4 +309,5 @@ See `tests/test_ts.rs` for 63 comprehensive test cases covering all implemented 
 - Interface extends clause (5 tests)
 - Call and construct signatures (7 tests)
 - Mapped types and type operators (8 tests)
+- Conditional types (6 tests)
 - Module path resolution (2 tests)

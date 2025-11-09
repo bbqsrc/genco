@@ -1641,6 +1641,114 @@ where
     MappedType::new(key_param, constraint, value_type)
 }
 
+/// A TypeScript conditional type.
+///
+/// Conditional types select one of two possible types based on a condition.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // type IsString<T> = T extends string ? true : false
+/// let is_string = ts::type_alias("IsString",
+///     ts::conditional_type(
+///         ts::type_ref("T"),
+///         ts::type_ref("string"),
+///         ts::literal("true"),
+///         ts::literal("false")
+///     )
+/// )
+/// .with_generic_params(vec![ts::generic_param("T")]);
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct ConditionalType {
+    check_type: Tokens,
+    extends_type: Tokens,
+    true_type: Tokens,
+    false_type: Tokens,
+}
+
+impl ConditionalType {
+    /// Create a new conditional type.
+    pub fn new<C, E, T, F>(check_type: C, extends_type: E, true_type: T, false_type: F) -> Self
+    where
+        C: FormatInto<TypeScript>,
+        E: FormatInto<TypeScript>,
+        T: FormatInto<TypeScript>,
+        F: FormatInto<TypeScript>,
+    {
+        let mut check_tokens = Tokens::new();
+        check_tokens.append(check_type);
+
+        let mut extends_tokens = Tokens::new();
+        extends_tokens.append(extends_type);
+
+        let mut true_tokens = Tokens::new();
+        true_tokens.append(true_type);
+
+        let mut false_tokens = Tokens::new();
+        false_tokens.append(false_type);
+
+        Self {
+            check_type: check_tokens,
+            extends_type: extends_tokens,
+            true_type: true_tokens,
+            false_type: false_tokens,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for ConditionalType {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append(self.check_type);
+        tokens.space();
+        tokens.append("extends");
+        tokens.space();
+        tokens.append(self.extends_type);
+        tokens.space();
+        tokens.append("?");
+        tokens.space();
+        tokens.append(self.true_type);
+        tokens.space();
+        tokens.append(":");
+        tokens.space();
+        tokens.append(self.false_type);
+    }
+}
+
+/// Create a TypeScript conditional type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// // T extends string ? X : Y
+/// let conditional = ts::conditional_type(
+///     ts::type_ref("T"),
+///     ts::type_ref("string"),
+///     ts::type_ref("X"),
+///     ts::type_ref("Y")
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn conditional_type<C, E, T, F>(
+    check_type: C,
+    extends_type: E,
+    true_type: T,
+    false_type: F,
+) -> ConditionalType
+where
+    C: FormatInto<TypeScript>,
+    E: FormatInto<TypeScript>,
+    T: FormatInto<TypeScript>,
+    F: FormatInto<TypeScript>,
+{
+    ConditionalType::new(check_type, extends_type, true_type, false_type)
+}
+
 /// A TypeScript enum.
 ///
 /// # Examples

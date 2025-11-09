@@ -50,10 +50,11 @@ This document tracks TypeScript features that are not yet implemented in genco.
 - [x] Support optional modifier: `MappedType::optional()`
 - [x] Support required modifier: `MappedType::required()`
 
-### Conditional Types
-- [ ] Implement conditional type: `ts::conditional_type(check, extends, true_type, false_type)`
+### Conditional Types ✅ BASIC COMPLETE
+- [x] Implement conditional type: `ts::conditional_type(check_type, extends_type, true_type, false_type)`
+- [x] Support nested conditional types
 - [ ] Support `infer` keyword in conditional types
-- [ ] Support distributive conditional types
+- [ ] Support distributive conditional types (behavior is implicit in TypeScript)
 
 ### Template Literal Types
 - [ ] Implement template literal type builder

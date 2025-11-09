@@ -1425,3 +1425,154 @@ fn test_mapped_type_record() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_conditional_type_simple() -> genco::fmt::Result {
+    let is_string = ts::type_alias(
+        "IsString",
+        ts::conditional_type(
+            ts::type_ref("T"),
+            ts::type_ref("string"),
+            ts::literal("true"),
+            ts::literal("false"),
+        ),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $is_string
+    };
+
+    assert_eq!(
+        vec!["type IsString<T> = T extends string ? \"true\" : \"false\";"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_conditional_type_with_types() -> genco::fmt::Result {
+    let is_array = ts::type_alias(
+        "IsArray",
+        ts::conditional_type(
+            ts::type_ref("T"),
+            ts::type_ref("Array").with_generics(vec![ts::type_ref("any")]),
+            ts::type_ref("T"),
+            ts::type_ref("never"),
+        ),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $is_array
+    };
+
+    assert_eq!(
+        vec!["type IsArray<T> = T extends Array<any> ? T : never;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_conditional_type_non_nullable() -> genco::fmt::Result {
+    let non_nullable = ts::type_alias(
+        "NonNullable",
+        ts::conditional_type(
+            ts::type_ref("T"),
+            ts::union_type(vec![ts::type_ref("null"), ts::type_ref("undefined")]),
+            ts::type_ref("never"),
+            ts::type_ref("T"),
+        ),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $non_nullable
+    };
+
+    assert_eq!(
+        vec!["type NonNullable<T> = T extends null | undefined ? never : T;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_conditional_type_extract() -> genco::fmt::Result {
+    let extract = ts::type_alias(
+        "Extract",
+        ts::conditional_type(
+            ts::type_ref("T"),
+            ts::type_ref("U"),
+            ts::type_ref("T"),
+            ts::type_ref("never"),
+        ),
+    )
+    .with_generic_params(vec![ts::generic_param("T"), ts::generic_param("U")]);
+
+    let toks: ts::Tokens = quote! {
+        $extract
+    };
+
+    assert_eq!(
+        vec!["type Extract<T, U> = T extends U ? T : never;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_conditional_type_exclude() -> genco::fmt::Result {
+    let exclude = ts::type_alias(
+        "Exclude",
+        ts::conditional_type(
+            ts::type_ref("T"),
+            ts::type_ref("U"),
+            ts::type_ref("never"),
+            ts::type_ref("T"),
+        ),
+    )
+    .with_generic_params(vec![ts::generic_param("T"), ts::generic_param("U")]);
+
+    let toks: ts::Tokens = quote! {
+        $exclude
+    };
+
+    assert_eq!(
+        vec!["type Exclude<T, U> = T extends U ? never : T;"],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_conditional_type_nested() -> genco::fmt::Result {
+    let nested = ts::type_alias(
+        "TypeName",
+        ts::conditional_type(
+            ts::type_ref("T"),
+            ts::type_ref("string"),
+            ts::literal("string"),
+            ts::conditional_type(
+                ts::type_ref("T"),
+                ts::type_ref("number"),
+                ts::literal("number"),
+                ts::literal("other"),
+            ),
+        ),
+    )
+    .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $nested
+    };
+
+    assert_eq!(
+        vec![
+            "type TypeName<T> = T extends string ? \"string\" : T extends number ? \"number\" : \"other\";"
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
