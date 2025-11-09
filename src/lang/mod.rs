@@ -27,6 +27,7 @@ pub mod nix;
 pub mod python;
 pub mod rust;
 pub mod swift;
+pub mod ts;
 
 pub use self::c::C;
 pub use self::csharp::Csharp;
@@ -39,6 +40,7 @@ pub use self::nix::Nix;
 pub use self::python::Python;
 pub use self::rust::Rust;
 pub use self::swift::Swift;
+pub use self::ts::TypeScript;
 
 use core::fmt::Write as _;
 
