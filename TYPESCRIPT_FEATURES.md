@@ -52,10 +52,16 @@ TypeRef::with_generics(generics) -> TypeRef
 ts::interface(name) -> Interface
 Interface::with_property(property) -> Interface
 Interface::with_extends(interfaces: Vec<TypeRef>) -> Interface
+Interface::with_call_signature(call_signature: CallSignature) -> Interface
+Interface::with_construct_signature(construct_signature: ConstructSignature) -> Interface
 ts::property(name, type_ref) -> Property
 ts::optional_property(name, type_ref) -> Property
 Property::optional() -> Property
 Property::readonly() -> Property
+
+// Call and construct signatures
+ts::call_signature(params: Vec<FunctionParam>, return_type: Option<TypeRef>) -> CallSignature
+ts::construct_signature(params: Vec<FunctionParam>, return_type: TypeRef) -> ConstructSignature
 
 // Type aliases
 ts::type_alias(name, type_ref) -> TypeAlias
@@ -137,8 +143,8 @@ The following TypeScript features are **not currently supported** and would requ
 ### Interface Features
 - ✅ **Extends Clause**: `interface Foo extends Bar {}`, `interface Foo extends Bar, Baz {}`
 - ✅ **Index Signatures**: `[key: string]: any`, `[index: number]: T`, `[key: symbol]: value`
-- ❌ **Call Signatures**: `(x: number): string`
-- ❌ **Construct Signatures**: `new (x: number): Foo`
+- ✅ **Call Signatures**: `(x: number): string`
+- ✅ **Construct Signatures**: `new (x: number): Foo`
 - ❌ **Method Signatures**: Separate from properties
 
 ### Import/Export Features
@@ -220,7 +226,7 @@ let tokens: ts::Tokens = quote! {
 |----------|-------------|-----------------|----------|
 | Import System | 8 | 5 | 61% |
 | Basic Types | 10 | 3 | 77% |
-| Interfaces | 8 | 2 | 80% |
+| Interfaces | 10 | 0 | 100% |
 | Type Aliases | 2 | 0 | 100% |
 | Enums | 2 | 0 | 100% |
 | Union/Intersection | 2 | 0 | 100% |
@@ -229,7 +235,7 @@ let tokens: ts::Tokens = quote! {
 | Function Signatures | 3 | 1 | 75% |
 | Generics | 4 | 1 | 80% |
 | Advanced Features | 4 | 9 | 31% |
-| **Overall** | **49** | **21** | **70%** |
+| **Overall** | **51** | **19** | **73%** |
 
 ## 🎯 Recommended Usage
 
@@ -279,7 +285,7 @@ Run the example:
 cargo run --example ts
 ```
 
-See `tests/test_ts.rs` for 48 comprehensive test cases covering all implemented features, including:
+See `tests/test_ts.rs` for 55 comprehensive test cases covering all implemented features, including:
 - Basic quoting and imports (8 tests)
 - Type references and interfaces (4 tests)
 - Type aliases and enums (3 tests)
@@ -288,4 +294,5 @@ See `tests/test_ts.rs` for 48 comprehensive test cases covering all implemented 
 - Generic interfaces and type aliases (11 tests)
 - Index signatures (5 tests)
 - Interface extends clause (5 tests)
+- Call and construct signatures (7 tests)
 - Module path resolution (2 tests)

@@ -65,10 +65,10 @@ This document tracks TypeScript features that are not yet implemented in genco.
 - [x] Support multiple interface inheritance: `interface Foo extends Bar, Baz {}`
 - [ ] Support interface merging
 
-### Method and Call Signatures
+### Method and Call Signatures ✅ CALL/CONSTRUCT COMPLETE
 - [ ] Add method signatures to interfaces (separate from properties)
-- [ ] Add call signatures: `(x: number): string`
-- [ ] Add construct signatures: `new (x: number): Foo`
+- [x] Add call signatures: `(x: number): string`
+- [x] Add construct signatures: `new (x: number): Foo`
 - [ ] Support method overloads in interfaces
 
 ### Type Assertions and Guards

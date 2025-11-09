@@ -990,6 +990,8 @@ pub struct Interface {
     name: ItemStr,
     generic_params: Vec<GenericParam>,
     extends_interfaces: Vec<TypeRef>,
+    call_signatures: Vec<CallSignature>,
+    construct_signatures: Vec<ConstructSignature>,
     properties: Vec<Property>,
     index_signature: Option<IndexSignature>,
 }
@@ -1004,6 +1006,8 @@ impl Interface {
             name: name.into(),
             generic_params: Vec::new(),
             extends_interfaces: Vec::new(),
+            call_signatures: Vec::new(),
+            construct_signatures: Vec::new(),
             properties: Vec::new(),
             index_signature: None,
         }
@@ -1048,6 +1052,48 @@ impl Interface {
     /// ```
     pub fn with_extends(mut self, extends_interfaces: Vec<TypeRef>) -> Self {
         self.extends_interfaces = extends_interfaces;
+        self
+    }
+
+    /// Add a call signature to the interface.
+    ///
+    /// Call signatures allow an interface to describe a callable type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// let callable = ts::interface("MyFunction")
+    ///     .with_call_signature(ts::call_signature(
+    ///         vec![ts::param("x", ts::type_ref("number"))],
+    ///         Some(ts::type_ref("string"))
+    ///     ));
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_call_signature(mut self, call_signature: CallSignature) -> Self {
+        self.call_signatures.push(call_signature);
+        self
+    }
+
+    /// Add a construct signature to the interface.
+    ///
+    /// Construct signatures allow an interface to describe a constructable type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genco::prelude::*;
+    ///
+    /// let constructable = ts::interface("MyConstructor")
+    ///     .with_construct_signature(ts::construct_signature(
+    ///         vec![ts::param("x", ts::type_ref("number"))],
+    ///         ts::type_ref("MyClass")
+    ///     ));
+    /// # Ok::<_, genco::fmt::Error>(())
+    /// ```
+    pub fn with_construct_signature(mut self, construct_signature: ConstructSignature) -> Self {
+        self.construct_signatures.push(construct_signature);
         self
     }
 
@@ -1117,13 +1163,25 @@ impl FormatInto<TypeScript> for Interface {
         tokens.append("{");
         tokens.indent();
 
-        // Add index signature first if present
+        // Add call signatures first
+        for call_sig in self.call_signatures {
+            tokens.push();
+            tokens.append(call_sig);
+        }
+
+        // Then add construct signatures
+        for construct_sig in self.construct_signatures {
+            tokens.push();
+            tokens.append(construct_sig);
+        }
+
+        // Add index signature
         if let Some(index_sig) = self.index_signature {
             tokens.push();
             tokens.append(index_sig);
         }
 
-        // Then add properties
+        // Finally add properties
         for prop in self.properties {
             tokens.push();
             tokens.append(prop);
@@ -1939,4 +1997,154 @@ where
     N: Into<ItemStr>,
 {
     FunctionSignature::new(name, params, return_type)
+}
+
+/// A TypeScript call signature for interfaces.
+///
+/// Call signatures allow an interface to describe a callable type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let callable = ts::interface("MyFunction")
+///     .with_call_signature(ts::call_signature(
+///         vec![ts::param("x", ts::type_ref("number"))],
+///         Some(ts::type_ref("string"))
+///     ));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct CallSignature {
+    params: Vec<FunctionParam>,
+    return_type: Option<TypeRef>,
+}
+
+impl CallSignature {
+    /// Create a new call signature.
+    pub fn new(params: Vec<FunctionParam>, return_type: Option<TypeRef>) -> Self {
+        Self {
+            params,
+            return_type,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for CallSignature {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("(");
+
+        for (i, param) in self.params.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append(",");
+                tokens.space();
+            }
+            tokens.append(param);
+        }
+
+        tokens.append(")");
+
+        if let Some(return_type) = self.return_type {
+            tokens.append(":");
+            tokens.space();
+            tokens.append(return_type);
+        }
+
+        tokens.append(";");
+    }
+}
+
+/// Create a TypeScript call signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let sig = ts::call_signature(
+///     vec![ts::param("x", ts::type_ref("number"))],
+///     Some(ts::type_ref("string"))
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn call_signature(
+    params: Vec<FunctionParam>,
+    return_type: Option<TypeRef>,
+) -> CallSignature {
+    CallSignature::new(params, return_type)
+}
+
+/// A TypeScript construct signature for interfaces.
+///
+/// Construct signatures allow an interface to describe a constructable type.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let constructable = ts::interface("MyConstructor")
+///     .with_construct_signature(ts::construct_signature(
+///         vec![ts::param("x", ts::type_ref("number"))],
+///         ts::type_ref("MyClass")
+///     ));
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct ConstructSignature {
+    params: Vec<FunctionParam>,
+    return_type: TypeRef,
+}
+
+impl ConstructSignature {
+    /// Create a new construct signature.
+    pub fn new(params: Vec<FunctionParam>, return_type: TypeRef) -> Self {
+        Self {
+            params,
+            return_type,
+        }
+    }
+}
+
+impl FormatInto<TypeScript> for ConstructSignature {
+    fn format_into(self, tokens: &mut Tokens) {
+        tokens.append("new");
+        tokens.space();
+        tokens.append("(");
+
+        for (i, param) in self.params.into_iter().enumerate() {
+            if i > 0 {
+                tokens.append(",");
+                tokens.space();
+            }
+            tokens.append(param);
+        }
+
+        tokens.append(")");
+        tokens.append(":");
+        tokens.space();
+        tokens.append(self.return_type);
+        tokens.append(";");
+    }
+}
+
+/// Create a TypeScript construct signature.
+///
+/// # Examples
+///
+/// ```
+/// use genco::prelude::*;
+///
+/// let sig = ts::construct_signature(
+///     vec![ts::param("x", ts::type_ref("number"))],
+///     ts::type_ref("MyClass")
+/// );
+/// # Ok::<_, genco::fmt::Error>(())
+/// ```
+pub fn construct_signature(
+    params: Vec<FunctionParam>,
+    return_type: TypeRef,
+) -> ConstructSignature {
+    ConstructSignature::new(params, return_type)
 }

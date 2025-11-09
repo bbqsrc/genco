@@ -1067,3 +1067,181 @@ fn test_interface_extends_with_index_signature() -> genco::fmt::Result {
     );
     Ok(())
 }
+
+#[test]
+fn test_call_signature_simple() -> genco::fmt::Result {
+    let callable = ts::interface("MyFunction")
+        .with_call_signature(ts::call_signature(
+            vec![ts::param("x", ts::type_ref("number"))],
+            Some(ts::type_ref("string")),
+        ));
+
+    let toks: ts::Tokens = quote! {
+        $callable
+    };
+
+    assert_eq!(
+        vec![
+            "interface MyFunction {",
+            "    (x: number): string;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_call_signature_multiple_params() -> genco::fmt::Result {
+    let callable = ts::interface("Comparator")
+        .with_call_signature(ts::call_signature(
+            vec![
+                ts::param("a", ts::type_ref("T")),
+                ts::param("b", ts::type_ref("T")),
+            ],
+            Some(ts::type_ref("number")),
+        ))
+        .with_generic_params(vec![ts::generic_param("T")]);
+
+    let toks: ts::Tokens = quote! {
+        $callable
+    };
+
+    assert_eq!(
+        vec![
+            "interface Comparator<T> {",
+            "    (a: T, b: T): number;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_call_signature_no_return() -> genco::fmt::Result {
+    let callable = ts::interface("VoidFunction")
+        .with_call_signature(ts::call_signature(
+            vec![ts::param("msg", ts::type_ref("string"))],
+            None,
+        ));
+
+    let toks: ts::Tokens = quote! {
+        $callable
+    };
+
+    assert_eq!(
+        vec![
+            "interface VoidFunction {",
+            "    (msg: string);",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_construct_signature_simple() -> genco::fmt::Result {
+    let constructable = ts::interface("MyConstructor")
+        .with_construct_signature(ts::construct_signature(
+            vec![ts::param("x", ts::type_ref("number"))],
+            ts::type_ref("MyClass"),
+        ));
+
+    let toks: ts::Tokens = quote! {
+        $constructable
+    };
+
+    assert_eq!(
+        vec![
+            "interface MyConstructor {",
+            "    new (x: number): MyClass;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_construct_signature_multiple_params() -> genco::fmt::Result {
+    let constructable = ts::interface("PersonConstructor")
+        .with_construct_signature(ts::construct_signature(
+            vec![
+                ts::param("name", ts::type_ref("string")),
+                ts::param("age", ts::type_ref("number")),
+            ],
+            ts::type_ref("Person"),
+        ));
+
+    let toks: ts::Tokens = quote! {
+        $constructable
+    };
+
+    assert_eq!(
+        vec![
+            "interface PersonConstructor {",
+            "    new (name: string, age: number): Person;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_call_and_construct_signatures_combined() -> genco::fmt::Result {
+    let combined = ts::interface("Dual")
+        .with_call_signature(ts::call_signature(
+            vec![ts::param("x", ts::type_ref("string"))],
+            Some(ts::type_ref("number")),
+        ))
+        .with_construct_signature(ts::construct_signature(
+            vec![ts::param("x", ts::type_ref("string"))],
+            ts::type_ref("DualInstance"),
+        ))
+        .with_property(ts::property("value", ts::type_ref("string")));
+
+    let toks: ts::Tokens = quote! {
+        $combined
+    };
+
+    assert_eq!(
+        vec![
+            "interface Dual {",
+            "    (x: string): number;",
+            "    new (x: string): DualInstance;",
+            "    value: string;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
+
+#[test]
+fn test_call_signature_with_optional_params() -> genco::fmt::Result {
+    let callable = ts::interface("OptionalCallback")
+        .with_call_signature(ts::call_signature(
+            vec![
+                ts::param("required", ts::type_ref("string")),
+                ts::param("optional", ts::type_ref("number")).optional(),
+            ],
+            Some(ts::type_ref("void")),
+        ));
+
+    let toks: ts::Tokens = quote! {
+        $callable
+    };
+
+    assert_eq!(
+        vec![
+            "interface OptionalCallback {",
+            "    (required: string, optional?: number): void;",
+            "}",
+        ],
+        toks.to_file_vec()?
+    );
+    Ok(())
+}
