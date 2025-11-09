@@ -50,7 +50,7 @@ fn main() -> Result<()> {
             }
 
             // Borrowing function - reads without taking ownership
-            func read($borrowing self, maxBytes: Int) -> Data {
+            $borrowing func read(maxBytes: Int) -> Data {
                 var buffer = Data(count: maxBytes)
                 let bytesRead = buffer.withUnsafeMutableBytes { ptr in
                     Darwin.read(descriptor, ptr.baseAddress!, maxBytes)
@@ -59,8 +59,7 @@ fn main() -> Result<()> {
             }
 
             // Function with mixed parameter ownership
-            func copyTo(
-                $borrowing self,
+            $borrowing func copyTo(
                 destination: $consuming FileHandle,
                 $inout_mod bytesWritten: Int
             ) throws {
@@ -71,7 +70,7 @@ fn main() -> Result<()> {
 
             // Available since iOS 15 - borrowing with async
             $available_ios15
-            func readAsync($borrowing self, maxBytes: Int) $async_mod throws -> Data {
+            $borrowing func readAsync(maxBytes: Int) $async_mod throws -> Data {
                 return $await_kw Task.detached {
                     self.read(maxBytes: maxBytes)
                 }.value
@@ -79,8 +78,7 @@ fn main() -> Result<()> {
 
             // Available since iOS 16 - complex parameter mix
             $available_ios16
-            func transfer(
-                $consuming self,
+            $consuming func transfer(
                 to destination: $borrowing FileHandle,
                 $inout_mod progress: TransferProgress,
                 bufferSize: Int = 4096
@@ -97,8 +95,8 @@ fn main() -> Result<()> {
                 self.close()
             }
 
-            // Inout parameter for atomic operations
-            func updateMetadata($inout_mod self, newSize: Int64) throws {
+            // Mutating function for atomic operations
+            mutating func updateMetadata(newSize: Int64) throws {
                 guard ftruncate(descriptor, newSize) == 0 else {
                     throw FileError.resizeFailed
                 }
@@ -116,8 +114,7 @@ fn main() -> Result<()> {
             }
 
             // Mixed: consuming self, borrowing other, inout result
-            func merge(
-                $consuming self,
+            $consuming func merge(
                 with other: $borrowing FileHandle,
                 $inout_mod result: MergeResult
             ) throws {
@@ -140,7 +137,7 @@ fn main() -> Result<()> {
             }
 
             // Private helper with borrowing
-            private func write($borrowing self, _ data: Data) -> Int {
+            private $borrowing func write(_ data: Data) -> Int {
                 data.withUnsafeBytes { ptr in
                     Darwin.write(descriptor, ptr.baseAddress!, data.count)
                 }
