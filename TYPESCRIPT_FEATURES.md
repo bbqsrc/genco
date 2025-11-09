@@ -28,6 +28,12 @@ This document provides a comprehensive breakdown of TypeScript features and thei
 - ✅ **Optional Properties**: `email?: string`
 - ✅ **Readonly Properties**: `readonly id: number`
 - ✅ **Enum Definitions**: Both numeric and string-valued enums
+- ✅ **Union Types**: `string | number`
+- ✅ **Intersection Types**: `Type1 & Type2`
+- ✅ **Literal Types**: String, number, float, bigint, boolean literals
+- ✅ **Tuple Types**: `[string, number]`
+- ✅ **Function Signatures**: Typed parameters with optional support
+- ✅ **Function Return Types**: `function foo(): string`
 
 ### API Functions
 ```rust
@@ -56,6 +62,25 @@ ts::type_alias(name, type_ref) -> TypeAlias
 // Enums
 ts::enum_type(name) -> Enum
 Enum::with_variant(name, value) -> Enum
+
+// Union and intersection types
+ts::union_type(types: Vec<TypeRef>) -> UnionType
+ts::intersection_type(types: Vec<TypeRef>) -> IntersectionType
+
+// Literal types
+ts::literal(value) -> LiteralType
+ts::literal_number(value: i64) -> LiteralType
+ts::literal_float(value: f64) -> LiteralType
+ts::literal_bigint(value: i64) -> LiteralType
+ts::literal_bool(value: bool) -> LiteralType
+
+// Tuple types
+ts::tuple_type(elements: Vec<TypeRef>) -> TupleType
+
+// Function signatures
+ts::param(name, type_ref) -> FunctionParam
+FunctionParam::optional() -> FunctionParam
+ts::function_signature(name, params, return_type) -> FunctionSignature
 ```
 
 ### Configuration
@@ -68,21 +93,17 @@ Enum::with_variant(name, value) -> Enum
 The following TypeScript features are **not currently supported** and would require additional implementation:
 
 ### Advanced Type System
-- ❌ **Union Types**: `string | number`
-- ❌ **Intersection Types**: `Type1 & Type2`
-- ❌ **Tuple Types**: `[string, number]`
 - ❌ **Mapped Types**: `{ [P in keyof T]: T[P] }`
 - ❌ **Conditional Types**: `T extends U ? X : Y`
-- ❌ **Literal Types**: `"success" | "error"`
 - ❌ **Index Signatures**: `[key: string]: any`
-- ❌ **Function Types**: `(x: number) => string`
+- ❌ **Arrow Function Types**: `(x: number) => string`
 - ❌ **Constructor Types**: `new () => T`
 
 ### Type Annotations
-- ❌ **Function Parameter Types**: Must be written manually in `quote!{}`
-- ❌ **Function Return Types**: Must be written manually in `quote!{}`
+- ⚠️ **Function Parameter Types**: Supported via `ts::param()` and `ts::function_signature()`
+- ⚠️ **Function Return Types**: Supported via `ts::function_signature()`
 - ❌ **Variable Type Annotations**: Must be written manually in `quote!{}`
-- ❌ **Arrow Function Types**: No helper for arrow function signatures
+- ❌ **Arrow Function Signatures**: No helper for arrow function types
 
 ### Advanced Features
 - ❌ **Generics on Interfaces**: `interface Foo<T> {}`
@@ -184,22 +205,29 @@ let tokens: ts::Tokens = quote! {
 | Category | Implemented | Not Implemented | Coverage |
 |----------|-------------|-----------------|----------|
 | Import System | 8 | 5 | 61% |
-| Basic Types | 4 | 9 | 31% |
+| Basic Types | 10 | 3 | 77% |
 | Interfaces | 5 | 5 | 50% |
 | Type Aliases | 1 | 0 | 100% |
 | Enums | 2 | 0 | 100% |
+| Union/Intersection | 2 | 0 | 100% |
+| Literal Types | 5 | 0 | 100% |
+| Tuple Types | 1 | 0 | 100% |
+| Function Signatures | 3 | 1 | 75% |
 | Generics | 1 | 4 | 20% |
-| Advanced Features | 0 | 15 | 0% |
-| **Overall** | **21** | **38** | **36%** |
+| Advanced Features | 0 | 13 | 0% |
+| **Overall** | **38** | **31** | **55%** |
 
 ## 🎯 Recommended Usage
 
 **TypeScript support in genco is best suited for:**
 - ✅ Generating TypeScript interfaces and type definitions
 - ✅ Creating TypeScript modules with proper imports
-- ✅ Building type-safe data models
+- ✅ Building type-safe data models with union and intersection types
 - ✅ Generating enum definitions
-- ✅ Creating simple type aliases
+- ✅ Creating type aliases with literal types
+- ✅ Generating function signatures with typed parameters
+- ✅ Building tuple types for structured data
+- ✅ Creating discriminated unions with literal types
 
 **For more complex TypeScript features:**
 - Use `quote!{}` to write code directly
