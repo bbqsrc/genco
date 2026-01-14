@@ -77,6 +77,9 @@ The following are languages which have built-in support in genco.
 * [🌐 <b>JavaScript</b>][js]<br>
   <small>[Example][js-example]</small>
 
+* [📘 <b>TypeScript</b>][ts]<br>
+  <small>[Example][ts-example]</small>
+
 * [🇨 <b>C</b>][c]<br>
   <small>[Example][c-example]</small>
 
@@ -148,6 +151,8 @@ fn main() {
 [Open an issue!]: <https://github.com/udoprog/genco/issues/new>
 [python-example]: <https://github.com/udoprog/genco/blob/master/examples/python.rs>
 [python]: <https://docs.rs/genco/latest/genco/lang/python/index.html>
+[ts-example]: <https://github.com/udoprog/genco/blob/master/examples/ts.rs>
+[ts]: <https://docs.rs/genco/latest/genco/lang/ts/index.html>
 [quote strings]: <https://docs.rs/genco/latest/genco/macro.quote.html#string-quoting>
 [rust-example]: <https://github.com/udoprog/genco/blob/master/examples/rust.rs>
 [rust]: <https://docs.rs/genco/latest/genco/lang/rust/index.html>
